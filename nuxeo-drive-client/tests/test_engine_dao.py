@@ -6,6 +6,7 @@ import unittest
 
 from nxdrive.engine.dao.sqlite import EngineDAO
 from nxdrive.engine.engine import Engine
+from tests.common import clean_dir
 
 
 class EngineDAOTest(unittest.TestCase):
@@ -31,6 +32,8 @@ class EngineDAOTest(unittest.TestCase):
             self.tmpdir = os.path.join(self.build_workspace, "tmp")
             if not os.path.isdir(self.tmpdir):
                 os.makedirs(self.tmpdir)
+            self.addCleanup(clean_dir, self.tmpdir)
+
         self.tmp_db = self.get_db_temp_file()
         db = open(self._get_default_db(), 'rb')
         with open(self.tmp_db.name, 'wb') as f:

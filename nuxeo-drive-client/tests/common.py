@@ -44,9 +44,8 @@ TEST_DEFAULT_QUIT_TIMEOUT = 30
 
 
 def configure_logger():
-    configure(console_level='TRACE',
-              command_name='test',
-              force_configure=True)
+    configure(
+        console_level='TRACE', command_name='test', force_configure=True)
 
 # Configure test logger
 configure_logger()
@@ -72,6 +71,7 @@ def clean_dir(_dir):
     to_remove = safe_long_path(_dir)
     test_data = os.environ.get('TEST_SAVE_DATA')
     if test_data:
+        log.info('Moving test data to folder %r', test_data)
         shutil.move(to_remove, test_data)
         return
 
@@ -84,9 +84,12 @@ def clean_dir(_dir):
         shutil.rmtree(to_remove)
     except OSError:
         if sys.platform == 'win32':
-            os.system('rmdir /S /Q %s' % to_remove)
+            os.system('rmdir /S /Q "%s"' % to_remove)
     except:
         pass
+
+    if os.path.exists(_dir):
+        log.warn('Clean-up went really wrong for %r!', _dir)
 
 
 class RemoteDocumentClientForTests(RemoteDocumentClient):

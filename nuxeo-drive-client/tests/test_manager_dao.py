@@ -16,14 +16,17 @@ class ManagerDAOTest(unittest.TestCase):
     def setUp(self):
         self.build_workspace = os.environ.get('WORKSPACE')
         self.tmpdir = None
-        if self.build_workspace is not None:
-            self.tmpdir = os.path.join(self.build_workspace, "tmp")
+        if self.build_workspace:
+            self.tmpdir = os.path.join(self.build_workspace, 'tmp')
             if not os.path.isdir(self.tmpdir):
                 os.makedirs(self.tmpdir)
+            self.addCleanup(clean_dir, self.tmpdir)
+
         self.test_folder = tempfile.mkdtemp(u'-nxdrive-tests', dir=self.tmpdir)
         self.nuxeo_url = os.environ.get('NXDRIVE_TEST_NUXEO_URL', 'http://localhost:8080/nuxeo')
         self.admin_user = os.environ.get('NXDRIVE_TEST_USER', 'Administrator')
         self.admin_password = os.environ.get('NXDRIVE_TEST_PASSWORD', 'Administrator')
+
         # Handle the # in url
         if '#' in self.nuxeo_url:
             # Remove the engine type for the rest of the test
@@ -33,7 +36,6 @@ class ManagerDAOTest(unittest.TestCase):
 
     def tearDown(self):
         Manager._singleton = None
-        clean_dir(self.test_folder)
 
     def _get_db(self, name):
         return os.path.join(os.path.dirname(__file__), 'resources', name)
@@ -96,11 +98,10 @@ class ManagerDAOTest(unittest.TestCase):
 
     def test_migration_db_v1(self):
         # Initialize old DB
-        db = open(self._get_db('test_manager_migration.db'), 'rb')
+        new_db = self._get_db('test_manager_migration.db')
         old_db = os.path.join(self.test_folder, 'nxdrive.db')
-        with open(old_db, 'wb') as f:
-            f.write(db.read())
-        db.close()
+        with open(new_db, 'rb') as old, open(old_db, 'wb') as new:
+            new.write(old.read())
 
         # Update token with one acquired against the test server
         conn = sqlite3.connect(old_db)

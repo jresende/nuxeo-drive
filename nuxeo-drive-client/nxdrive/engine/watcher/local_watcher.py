@@ -565,6 +565,8 @@ class LocalWatcher(EngineWorker):
             log.info('Stopping FS Observer thread')
             try:
                 self._observer.stop()
+            except KeyError:
+                pass
             except StandardError as e:
                 log.warning('Cannot stop FS observer : %r', e)
 
@@ -581,6 +583,8 @@ class LocalWatcher(EngineWorker):
             log.info('Stopping FS root Observer thread')
             try:
                 self._root_observer.stop()
+            except KeyError:
+                pass
             except StandardError as e:
                 log.warning('Cannot stop FS root observer : %r', e)
 

@@ -46,10 +46,9 @@ class MockEsky(Esky):
         self.set_local_version_finder(version_finder)
 
     def set_local_version_finder(self, version_finder):
-        if version_finder is not None:
-            if isinstance(version_finder, basestring):
-                kwds = {"download_url": version_finder}
-                version_finder = esky.finder.LocalVersionFinder(**kwds)
+        if isinstance(version_finder, basestring):
+            kwds = {"download_url": version_finder}
+            version_finder = esky.finder.LocalVersionFinder(**kwds)
         self.version_finder = version_finder
 
 

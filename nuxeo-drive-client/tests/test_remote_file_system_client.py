@@ -143,9 +143,9 @@ class TestRemoteFileSystemClient(UnitTestCase):
         folder_2_id = remote_client.make_folder(self.workspace_id,
             'Folder 2').uid
         file_1_id = remote_client.make_file(self.workspace_id,
-            'File 1', "Content of file 1.").uid
+            'File 1.txt', "Content of file 1.").uid
         file_2_id = remote_client.make_file(folder_1_id,
-            'File 2', "Content of file 2.").uid
+            'File 2.txt', "Content of file 2.").uid
 
         # Check workspace children
         workspace_children = remote_client.get_children_info(self.workspace_id)
@@ -158,7 +158,7 @@ class TestRemoteFileSystemClient(UnitTestCase):
         self.assertEqual(workspace_children[1].name, 'Folder 2')
         self.assertTrue(workspace_children[1].folderish)
         self.assertEqual(workspace_children[2].uid, file_1_id)
-        self.assertEqual(workspace_children[2].name, 'File 1')
+        self.assertEqual(workspace_children[2].name, 'File 1.txt')
         self.assertFalse(workspace_children[2].folderish)
 
         # Check folder_1 children
@@ -166,7 +166,7 @@ class TestRemoteFileSystemClient(UnitTestCase):
         self.assertTrue(folder_1_children is not None)
         self.assertEqual(len(folder_1_children), 1)
         self.assertEqual(folder_1_children[0].uid, file_2_id)
-        self.assertEqual(folder_1_children[0].name, 'File 2')
+        self.assertEqual(folder_1_children[0].name, 'File 2.txt')
 
     def test_scroll_descendants(self):
         remote = self.remote_file_system_client_1

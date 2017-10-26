@@ -280,6 +280,11 @@ class UnitTestCase(SimpleUnitTestCase):
         self.workspace_title_1 = self.workspace_title
         self.workspace_title_2 = self.workspace_title
 
+        # Last chance for clean-up, please be kind with us
+        ws = os.environ.get('WORKSPACE')
+        if ws:
+            self.addCleanup(clean_dir, os.path.join(ws, 'tmp'))
+
     def tearDownServer(self, server_profile=None):
         # Don't need to revoke tokens for the file system remote clients
         # since they use the same users as the remote document clients
@@ -309,11 +314,12 @@ class UnitTestCase(SimpleUnitTestCase):
         self.build_workspace = os.environ.get('WORKSPACE')
         self.tearedDown = False
 
-        self.tmpdir = None
-        if self.build_workspace is not None:
-            self.tmpdir = os.path.join(self.build_workspace, "tmp")
+        if self.build_workspace:
+            self.tmpdir = os.path.join(self.build_workspace, 'tmp')
             if not os.path.isdir(self.tmpdir):
                 os.makedirs(self.tmpdir)
+            self.addCleanup(clean_dir, self.tmpdir)
+
         self.upload_tmp_dir = tempfile.mkdtemp(u'-nxdrive-uploads', dir=self.tmpdir)
 
         # Check the local filesystem test environment
@@ -662,10 +668,6 @@ class UnitTestCase(SimpleUnitTestCase):
         self.manager_2.dispose_db()
         Manager._singleton = None
         self.tearDownServer(server_profile)
-
-        clean_dir(self.upload_tmp_dir)
-        clean_dir(self.local_test_folder_1)
-        clean_dir(self.local_test_folder_2)
 
         if hasattr(self, 'engine_1'):
             del self.engine_1

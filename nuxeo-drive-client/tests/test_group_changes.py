@@ -1,4 +1,6 @@
 # coding: utf-8
+from urllib2 import HTTPError
+
 from nxdrive.logging_config import get_logger
 from tests.common import RemoteDocumentClientForTests
 from tests.common_unit_test import UnitTestCase
@@ -15,56 +17,49 @@ class TestGroupChanges(UnitTestCase):
     def setUp(self):
         remote = self.remote_restapi_client_admin
 
-        # Create test groups
-        group_names = remote.get_group_names()
-        self.assertTrue('group1' not in group_names)
-        self.assertTrue('group2' not in group_names)
-        self.assertTrue('parentGroup' not in group_names)
-        self.assertTrue('grandParentGroup' not in group_names)
-
-        remote.create_group('group1', member_users=['driveuser_1'])
-        remote.create_group('group2', member_users=['driveuser_1'])
-        remote.create_group('parentGroup', member_groups=['group1'])
-        remote.create_group('grandParentGroup', member_groups=['parentGroup'])
+        self._create_group('group1', ['driveuser_1'])
+        self._create_group('group2', ['driveuser_1'])
+        self._create_group('parentGroup', ['group1'])
+        self._create_group('grandParentGroup', ['parentGroup'])
 
         group_names = remote.get_group_names()
-        self.assertTrue('group1' in group_names)
-        self.assertTrue('group2' in group_names)
-        self.assertTrue('parentGroup' in group_names)
-        self.assertTrue('grandParentGroup' in group_names)
+        assert 'group1' in group_names
+        assert 'group2' in group_names
+        assert 'parentGroup' in group_names
+        assert 'grandParentGroup' in group_names
 
         # Create test workspace
         workspaces_path = '/default-domain/workspaces'
         workspace_name = 'groupChangesTestWorkspace'
         self.workspace_path = workspaces_path + '/' + workspace_name
-        workspace = {'entity-type': 'document',
-                     'name': workspace_name,
-                     'type': 'Workspace',
-                     'properties': {'dc:title': 'Group Changes Test Workspace'}
-                     }
+        workspace = {
+            'entity-type': 'document',
+            'name': workspace_name,
+            'type': 'Workspace',
+            'properties': {'dc:title': 'Group Changes Test Workspace'},
+        }
         remote.execute('path' + workspaces_path, method='POST', body=workspace)
+        self.addCleanup(remote.execute, 'path' + self.workspace_path, method='DELETE')
 
         self.admin_remote = RemoteDocumentClientForTests(
-            self.nuxeo_url, self.admin_user, 'nxdrive-test-administrator-device',
-            self.version, password=self.password, base_folder=self.workspace_path)
+            self.nuxeo_url, self.admin_user,
+            'nxdrive-test-administrator-device', self.version,
+            password=self.password, base_folder=self.workspace_path)
 
-    def tearDown(self):
+    def _create_group(self, group, users):
+        """ Helper to create and purge a group for given users. """
+
         remote = self.remote_restapi_client_admin
-
-        # Delete test workspace
-        remote.execute('path' + self.workspace_path, method='DELETE')
-
-        # Delete test groups
-        remote.delete_group('grandParentGroup')
-        remote.delete_group('parentGroup')
-        remote.delete_group('group2')
-        remote.delete_group('group1')
-
-        group_names = remote.get_group_names()
-        self.assertTrue('group1' not in group_names)
-        self.assertTrue('group2' not in group_names)
-        self.assertTrue('parentGroup' not in group_names)
-        self.assertTrue('grandParentGroup' not in group_names)
+        try:
+            remote.create_group(group, member_users=users)
+        except HTTPError as exc:
+            if exc.code == 409:
+                # Already exists, it could happen when tests are aborted
+                self.addCleanup(remote.delete_group, group)
+            else:
+                raise exc
+        else:
+            self.addCleanup(remote.delete_group, group)
 
     def test_group_changes_on_sync_root(self):
         """
@@ -87,7 +82,7 @@ class TestGroupChanges(UnitTestCase):
 
         log.debug('Check that syncRoot is created locally')
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(self.local_root_client_1.exists('/syncRoot'))
+        assert self.local_root_client_1.exists('/syncRoot')
 
         self._test_group_changes('/syncRoot', 'group1')
 
@@ -123,8 +118,8 @@ class TestGroupChanges(UnitTestCase):
 
         log.debug('Check that syncRoot and child are created locally')
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(self.local_root_client_1.exists('/syncRoot'))
-        self.assertTrue(self.local_root_client_1.exists('/syncRoot/child'))
+        assert self.local_root_client_1.exists('/syncRoot')
+        assert self.local_root_client_1.exists('/syncRoot/child')
 
         self._test_group_changes('/syncRoot/child', 'group2')
 
@@ -152,7 +147,7 @@ class TestGroupChanges(UnitTestCase):
 
         log.debug('Check that syncRoot is created locally')
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(self.local_root_client_1.exists('/syncRoot'))
+        assert self.local_root_client_1.exists('/syncRoot')
 
         self._test_group_changes('/syncRoot', 'group1')
 
@@ -184,9 +179,7 @@ class TestGroupChanges(UnitTestCase):
             - Create the group including the test user.
         """
         log.debug('Test changes on %s for %s with needsParentGroup=%r',
-                  group_name,
-                  folder_path,
-                  needsParentGroup)
+                  group_name, folder_path, needsParentGroup)
         remote = self.remote_restapi_client_admin
         local = self.local_root_client_1
 
@@ -195,21 +188,21 @@ class TestGroupChanges(UnitTestCase):
 
         log.debug('Check that %s is deleted locally', folder_path)
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists(folder_path))
+        assert not local.exists(folder_path)
 
         log.debug('Add driveuser_1 to %s', group_name)
         remote.update_group(group_name, member_users=['driveuser_1'])
 
         log.debug('Check that %s is created locally', folder_path)
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists(folder_path))
+        assert local.exists(folder_path)
 
         log.debug('Delete %s', group_name)
         remote.delete_group(group_name)
 
         log.debug('Check that %s is deleted locally', folder_path)
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists(folder_path))
+        assert not local.exists(folder_path)
 
         log.debug('Create %s', group_name)
         remote.create_group(group_name, member_users=['driveuser_1'])
@@ -218,14 +211,14 @@ class TestGroupChanges(UnitTestCase):
             log.debug('%s should not be created locally since the newly created group has not been added yet'
                       ' as a subgroup of parentGroup', folder_path)
             self.wait_sync(wait_for_async=True)
-            self.assertFalse(local.exists(folder_path))
+            assert not local.exists(folder_path)
 
             log.trace("Add %s as a subgroup of parentGroup", group_name)
             remote.update_group('parentGroup', member_groups=[group_name])
 
         log.debug('Check that %s is created locally', folder_path)
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists(folder_path))
+        assert local.exists(folder_path)
 
     def _test_group_changes_with_ancestor_groups(self, ancestor_group):
         """
@@ -248,6 +241,6 @@ class TestGroupChanges(UnitTestCase):
 
         log.debug('Check that syncRoot is created locally')
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(self.local_root_client_1.exists('/syncRoot'))
+        assert self.local_root_client_1.exists('/syncRoot')
 
         self._test_group_changes('/syncRoot', 'group1', needsParentGroup=True)
