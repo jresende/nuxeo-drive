@@ -33,8 +33,10 @@ class TestRemoteDeletion(UnitTestCase):
         See TestIntegrationSecurityUpdates.test_synchronize_denying_read_access
         as the same uses cases are tested
         """
+        
         # Bind the server and root workspace
         self.engine_1.start()
+        
         # Get local and remote clients
         local = self.local_client_1
         remote = self.remote_document_client_1
@@ -45,13 +47,13 @@ class TestRemoteDeletion(UnitTestCase):
         remote.make_file('/Test folder', 'joe.txt', 'Some content')
 
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.txt'))
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.txt')
 
         # Delete remote folder then synchronize
         remote.delete('/Test folder')
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists('/Test folder'))
+        assert not local.exists('/Test folder')
 
         # Restore folder from trash then synchronize
         # Undeleting each item as following 'undelete' transition
@@ -60,22 +62,22 @@ class TestRemoteDeletion(UnitTestCase):
         remote.undelete('/Test folder')
         remote.undelete('/Test folder/joe.txt')
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.txt'))
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.txt')
 
         # Delete sync root then synchronize
         remote.delete('/')
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists('/'))
+        assert not local.exists('/')
 
         # Restore sync root from trash then synchronize
         remote.undelete('/')
         remote.undelete('/Test folder')
         remote.undelete('/Test folder/joe.txt')
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/'))
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.txt'))
+        assert local.exists('/')
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.txt')
 
     def _remote_deletion_while_upload(self):
 
@@ -107,7 +109,7 @@ class TestRemoteDeletion(UnitTestCase):
         # Delete remote folder then synchronize
         remote.delete('/Test folder')
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists('/Test folder'))
+        assert not local.exists('/Test folder')
 
     def test_synchronize_remote_deletion_while_upload(self):
         if sys.platform != 'win32':
@@ -152,7 +154,7 @@ class TestRemoteDeletion(UnitTestCase):
         remote.make_file('/Test folder', 'testFile.pdf', content)
 
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists('/Test folder/testFile.pdf'))
+        assert not local.exists('/Test folder/testFile.pdf')
 
     def test_synchronize_remote_deletion_while_download_file(self):
         if sys.platform != 'win32':
@@ -172,16 +174,16 @@ class TestRemoteDeletion(UnitTestCase):
         remote.make_folder('/', "Folder 1b")
         remote.make_folder('/', "Folder 1c")
         self.wait_sync()
-        self.assertTrue(local.exists('/Folder 1'))
-        self.assertTrue(local.exists('/Folder 1b'))
-        self.assertTrue(local.exists('/Folder 1c'))
+        assert local.exists('/Folder 1')
+        assert local.exists('/Folder 1b')
+        assert local.exists('/Folder 1c')
         remote.delete('/Folder 1')
         remote.delete('/Folder 1b')
         remote.delete('/Folder 1c')
         self.wait_sync()
-        self.assertFalse(local.exists('/Folder 1'))
-        self.assertFalse(local.exists('/Folder 1b'))
-        self.assertFalse(local.exists('/Folder 1c'))
+        assert not local.exists('/Folder 1')
+        assert not local.exists('/Folder 1b')
+        assert not local.exists('/Folder 1c')
 
     def test_synchronize_local_folder_lost_permission(self):
         """Test local folder rename followed by remote deletion"""
@@ -198,13 +200,14 @@ class TestRemoteDeletion(UnitTestCase):
         remote.make_file(test_folder_uid, 'joe.odt', 'Some content')
 
         self.wait_sync(wait_for_async=True, wait_for_engine_1=False, wait_for_engine_2=True)
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.odt'))
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.odt')
         op_input = "doc:" + self.workspace
         self.root_remote_client.execute("Document.RemoveACL", op_input=op_input, acl="local")
+
         # Disable for now as get_acls seems to cause an issue
         self.wait_sync(wait_for_async=True, wait_for_engine_1=False, wait_for_engine_2=True)
-        self.assertFalse(local.exists('/Test folder'))
+        assert not local.exists('/Test folder')
 
     def test_synchronize_local_folder_rename_remote_deletion(self):
         """Test local folder rename followed by remote deletion"""
@@ -221,30 +224,29 @@ class TestRemoteDeletion(UnitTestCase):
         remote.make_file(test_folder_uid, 'joe.odt', 'Some content')
 
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.odt'))
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.odt')
 
         # Locally rename the folder then synchronize
         time.sleep(OS_STAT_MTIME_RESOLUTION)
         local.rename('/Test folder', 'Test folder renamed')
 
         self.wait_sync()
-        self.assertFalse(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder renamed'))
-        self.assertEqual(remote.get_info(test_folder_uid).name,
-                         'Test folder renamed')
+        assert not local.exists('/Test folder')
+        assert local.exists('/Test folder renamed')
+        assert remote.get_info(test_folder_uid).name == 'Test folder renamed'
 
         # Delete remote folder then synchronize
         remote.delete('/Test folder')
 
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(remote.exists('/Test folder renamed'))
-        self.assertFalse(local.exists('/Test folder renamed'))
+        assert not remote.exists('/Test folder renamed')
+        assert not local.exists('/Test folder renamed')
 
     def _check_pair_state(self, session, local_path, pair_state):
         local_path = '/' + self.workspace_title + local_path
         doc_pair = self.engine_1.get_dao().get_state_from_local(local_path)
-        self.assertEqual(doc_pair.pair_state, pair_state)
+        assert doc_pair.pair_state == pair_state
 
     def _truncate_remote_path(self, path):
         doc_name = path.rsplit('/', 1)[1]

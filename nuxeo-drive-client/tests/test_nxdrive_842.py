@@ -59,16 +59,16 @@ class Test(UnitTestCase):
         self.wait_sync(wait_for_async=True, enforce_errors=False)
 
         # Checks
-        self.assertEqual(len(local.get_children_info('/')), 1)
-        self.assertEqual(len(local.get_children_info('/fruits')), 3)
+        assert len(local.get_children_info('/')) == 1
+        assert len(local.get_children_info('/fruits')) == 3
 
         # Fix the duplicate error
         new_folder = 'fruits-renamed-remotely'
         remote.update(folder1, properties={'dc:title': new_folder})
         self.wait_sync(wait_for_async=True, enforce_errors=False)
-        self.assertEqual(len(local.get_children_info('/')), 2)
-        self.assertEqual(len(local.get_children_info('/' + new_folder)), 2)
-        self.assertEqual(len(local.get_children_info('/fruits')), 3)
+        assert len(local.get_children_info('/')) == 2
+        assert len(local.get_children_info('/' + new_folder)) == 2
+        assert len(local.get_children_info('/fruits')) == 3
 
     def test_nxdrive_842_rename_remotely(self):
         local = self.local_root_client_1
@@ -96,16 +96,16 @@ class Test(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Checks
-        self.assertEqual(len(local.get_children_info('/')), 1)
-        self.assertEqual(len(local.get_children_info('/fruits')), 3)
+        assert len(local.get_children_info('/')) == 1
+        assert len(local.get_children_info('/fruits')) == 3
 
         # Fix the duplicate error
         new_folder = 'fruits-renamed-remotely'
         remote.update(folder2, properties={'dc:title': new_folder})
         self.wait_sync(wait_for_async=True)
-        self.assertEqual(len(local.get_children_info('/')), 2)
-        self.assertEqual(len(local.get_children_info('/' + new_folder)), 3)
-        self.assertEqual(len(local.get_children_info('/fruits')), 2)
+        assert len(local.get_children_info('/')) == 2
+        assert len(local.get_children_info('/' + new_folder)) == 3
+        assert len(local.get_children_info('/fruits')) == 2
 
     def test_nxdrive_842_delete_remotely(self):
         local = self.local_root_client_1
@@ -133,14 +133,14 @@ class Test(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Checks
-        self.assertEqual(len(local.get_children_info('/')), 1)
-        self.assertEqual(len(local.get_children_info('/fruits')), 3)
+        assert len(local.get_children_info('/')) == 1
+        assert len(local.get_children_info('/fruits')) == 3
 
         # Fix the duplicate error
         remote.delete(folder2)
         self.wait_sync(wait_for_async=True)
-        self.assertEqual(len(local.get_children_info('/')), 1)
-        self.assertEqual(len(local.get_children_info('/fruits')), 2)
+        assert len(local.get_children_info('/')) == 1
+        assert len(local.get_children_info('/fruits')) == 2
 
     def test_nxdrive_842_delete_dupe_remotely(self):
         local = self.local_root_client_1
@@ -168,14 +168,14 @@ class Test(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Checks
-        self.assertEqual(len(local.get_children_info('/')), 1)
-        self.assertEqual(len(local.get_children_info('/fruits')), 3)
+        assert len(local.get_children_info('/')) == 1
+        assert len(local.get_children_info('/fruits')) == 3
 
         # Fix the duplicate error
         remote.delete(folder1)
         self.wait_sync(wait_for_async=True)
-        self.assertEqual(len(local.get_children_info('/')), 1)
-        self.assertEqual(len(local.get_children_info('/fruits')), 3)
+        assert len(local.get_children_info('/')) == 1
+        assert len(local.get_children_info('/fruits')) == 3
         # TODO Check error count
 
     def test_nxdrive_842_delete_locally(self):
@@ -204,15 +204,15 @@ class Test(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Checks
-        self.assertEqual(len(local.get_children_info('/')), 1)
-        self.assertEqual(len(local.get_children_info('/fruits')), 3)
+        assert len(local.get_children_info('/')) == 1
+        assert len(local.get_children_info('/fruits')) == 3
 
         # Fix the duplicate error
         local.delete('/fruits')
         self.wait_sync(wait_for_async=True)
-        self.assertEqual(len(local.get_children_info('/')), 1)
-        self.assertTrue(folder1 in local.get_remote_id('/fruits'))
-        self.assertEqual(len(local.get_children_info('/fruits')), 2)
+        assert len(local.get_children_info('/')) == 1
+        assert folder1 in local.get_remote_id('/fruits')
+        assert len(local.get_children_info('/fruits')) == 2
 
     def test_nxdrive_842_rename_locally(self):
         local = self.local_root_client_1
@@ -240,12 +240,12 @@ class Test(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Checks
-        self.assertEqual(len(local.get_children_info('/')), 1)
-        self.assertEqual(len(local.get_children_info('/fruits')), 3)
+        assert len(local.get_children_info('/')) == 1
+        assert len(local.get_children_info('/fruits')) == 3
 
         # Fix the duplicate error
         local.rename('/fruits', 'fruits-renamed')
         self.wait_sync(wait_for_async=True)
-        self.assertEqual(len(local.get_children_info('/')), 2)
-        self.assertEqual(len(local.get_children_info('/fruits')), 2)
-        self.assertEqual(len(local.get_children_info('/fruits-renamed')), 3)
+        assert len(local.get_children_info('/')) == 2
+        assert len(local.get_children_info('/fruits')) == 2
+        assert len(local.get_children_info('/fruits-renamed')) == 3

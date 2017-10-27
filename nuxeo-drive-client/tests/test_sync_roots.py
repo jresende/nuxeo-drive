@@ -22,16 +22,16 @@ class TestSyncRoots(UnitTestCase):
         # Start engine and wait for synchronization
         self.engine_1.start()
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists('/Nuxeo Drive Test Workspace'))
-        self.assertTrue(local.exists('/child'))
-        self.assertTrue(local.exists('/child/aFile.txt'))
+        assert not local.exists('/Nuxeo Drive Test Workspace')
+        assert local.exists('/child')
+        assert local.exists('/child/aFile.txt')
 
         # Register parent folder
         remote.register_as_root(self.workspace)
 
         # Start engine and wait for synchronization
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists('/child'))
-        self.assertTrue(local.exists('/Nuxeo Drive Test Workspace'))
-        self.assertTrue(local.exists('/Nuxeo Drive Test Workspace/child'))
-        self.assertTrue(local.exists('/Nuxeo Drive Test Workspace/child/aFile.txt'))
+        assert not local.exists('/child')
+        assert local.exists('/Nuxeo Drive Test Workspace')
+        assert local.exists('/Nuxeo Drive Test Workspace/child')
+        assert local.exists('/Nuxeo Drive Test Workspace/child/aFile.txt')

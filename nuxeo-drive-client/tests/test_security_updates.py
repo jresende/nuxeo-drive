@@ -39,8 +39,8 @@ class TestSecurityUpdates(UnitTestCase):
         remote.make_file('/Test folder', 'joe.txt', 'Some content')
 
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.txt'))
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.txt')
 
         # Remove Read permission for test user on a regular folder
         # then synchronize
@@ -48,32 +48,29 @@ class TestSecurityUpdates(UnitTestCase):
                                   TEST_WORKSPACE_PATH + '/Test folder',
                                   False)
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists('/Test folder'))
+        assert not local.exists('/Test folder')
 
         # Add Read permission back for test user then synchronize
-        self._set_read_permission(self.user_1,
-                                  TEST_WORKSPACE_PATH + '/Test folder',
-                                  True)
+        self._set_read_permission(
+            self.user_1, TEST_WORKSPACE_PATH + '/Test folder', True)
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.txt'))
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.txt')
 
         # Remove Read permission for test user on a sync root
         # then synchronize
-        self._set_read_permission(self.user_1,
-                                  TEST_WORKSPACE_PATH,
-                                  False)
+        self._set_read_permission(
+            self.user_1, TEST_WORKSPACE_PATH, False)
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(local.exists('/'))
+        assert not local.exists('/')
 
         # Add Read permission back for test user then synchronize
-        self._set_read_permission(self.user_1,
-                                  TEST_WORKSPACE_PATH,
-                                  True)
+        self._set_read_permission(
+            self.user_1, TEST_WORKSPACE_PATH, True)
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/'))
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.txt'))
+        assert local.exists('/')
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.txt')
 
     @pytest.mark.skip(reason='NXDRIVE-170: WIP')
     def test_synchronize_denying_read_access_local_modification(self):
@@ -119,22 +116,23 @@ class TestSecurityUpdates(UnitTestCase):
                          'Content')
 
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.odt'))
-        self.assertTrue(local.exists('/Test folder/jack.odt'))
-        self.assertTrue(local.exists('/Test folder/Sub folder 1'))
-        self.assertTrue(local.exists(
-                                '/Test folder/Sub folder 1/sub file 1.txt'))
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.odt')
+        assert local.exists('/Test folder/jack.odt')
+        assert local.exists('/Test folder/Sub folder 1')
+        assert local.exists('/Test folder/Sub folder 1/sub file 1.txt')
 
         # Remove Read permission for test user on a regular folder
         # and make some local and remote changes concurrently then synchronize
         test_folder_path = TEST_WORKSPACE_PATH + '/Test folder'
-        self._set_read_permission(self.user_1,
-                                  test_folder_path, False)
+        self._set_read_permission(self.user_1, test_folder_path, False)
+        
         # Local changes
         time.sleep(OS_STAT_MTIME_RESOLUTION)
+        
         # Create new file
         local.make_file('/Test folder', 'local.odt', 'New local content')
+        
         # Create new folder with files
         local.make_folder('/Test folder', 'Local sub folder 2')
         local.make_file('/Test folder/Local sub folder 2',
@@ -142,6 +140,7 @@ class TestSecurityUpdates(UnitTestCase):
         # Update file
         local.update_content('/Test folder/joe.odt',
                              'Some locally updated content')
+        
         # Remote changes
         # Create new file
         root_remote.make_file(test_folder_path, 'remote.odt',
@@ -161,145 +160,117 @@ class TestSecurityUpdates(UnitTestCase):
         # Remote changes should not be impacted client side.
         # Local changes should not be impacted server side.
         # Local check
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertEqual(len(local.get_children_info('/Test folder')), 3)
-        self.assertTrue(local.exists('/Test folder/joe.odt'))
-        self.assertEqual(local.get_content('/Test folder/joe.odt'),
-                         'Some locally updated content')
-        self.assertTrue(local.exists('/Test folder/local.odt'))
-        self.assertTrue(local.exists('/Test folder/Local sub folder 2'))
-        self.assertTrue(local.exists(
-                    '/Test folder/Local sub folder 2/local sub file 2.txt'))
+        assert local.exists('/Test folder')
+        assert len(local.get_children_info('/Test folder')) == 3
+        assert local.exists('/Test folder/joe.odt')
+        assert local.get_content('/Test folder/joe.odt') == 'Some locally updated content'
+        assert local.exists('/Test folder/local.odt')
+        assert local.exists('/Test folder/Local sub folder 2')
+        assert local.exists('/Test folder/Local sub folder 2/local sub file 2.txt')
 
-        self.assertFalse(local.exists('/Test folder/jack.odt'))
-        self.assertFalse(local.exists('/Test folder/remote.odt'))
-        self.assertFalse(local.exists('/Test folder/Sub folder 1'))
-        self.assertFalse(local.exists(
-                                '/Test folder/Sub folder 1/sub file 1.txt'))
-        self.assertFalse(local.exists('/Test folder/Remote sub folder 1'))
-        self.assertFalse(local.exists(
-                    '/Test folder/Remote sub folder 1/remote sub file 1.txt'))
+        assert not local.exists('/Test folder/jack.odt')
+        assert not local.exists('/Test folder/remote.odt')
+        assert not local.exists('/Test folder/Sub folder 1')
+        assert not local.exists('/Test folder/Sub folder 1/sub file 1.txt')
+        assert not local.exists('/Test folder/Remote sub folder 1')
+        assert not local.exists('/Test folder/Remote sub folder 1/remote sub file 1.txt')
+        
         # State check
         self._check_pair_state('/Test folder', 'unsynchronized')
-        self._check_pair_state('/Test folder/joe.odt',
-                               'unsynchronized')
-        self._check_pair_state('/Test folder/local.odt',
-                               'unsynchronized')
-        self._check_pair_state('/Test folder/Local sub folder 2',
-                               'unsynchronized')
+        self._check_pair_state('/Test folder/joe.odt', 'unsynchronized')
+        self._check_pair_state('/Test folder/local.odt', 'unsynchronized')
+        self._check_pair_state('/Test folder/Local sub folder 2', 'unsynchronized')
         self._check_pair_state('/Test folder/Local sub folder 2/local sub file 2.txt',
                                'unsynchronized')
         # Remote check
         test_folder_uid = root_remote.get_info(test_folder_path).uid
-        self.assertEqual(len(root_remote.get_children_info(
-                                                        test_folder_uid)), 5)
-        self.assertTrue(root_remote.exists(test_folder_path + '/joe.odt'))
-        self.assertEqual(root_remote.get_content(
-                                            test_folder_path + '/joe.odt'),
-                                            'Some remotely updated content')
-        self.assertTrue(root_remote.exists(test_folder_path + '/jack.odt'))
-        self.assertTrue(root_remote.exists(test_folder_path + '/remote.odt'))
-        self.assertTrue(root_remote.exists(test_folder_path + '/Sub folder 1'))
-        self.assertTrue(root_remote.exists(
-            test_folder_path + '/Sub folder 1/sub file 1.txt'))
-        self.assertTrue(root_remote.exists(
-            test_folder_path + '/Remote sub folder 2'))
-        self.assertTrue(root_remote.exists(
-            test_folder_path + '/Remote sub folder 2/remote sub file 2.txt'))
-
-        self.assertFalse(root_remote.exists(test_folder_path + '/local.odt'))
-        self.assertFalse(root_remote.exists(
-            test_folder_path + '/Local sub folder 2'))
-        self.assertFalse(root_remote.exists(
-            test_folder_path + '/Local sub folder 1/local sub file 2.txt'))
+        assert len(root_remote.get_children_info(test_folder_uid)) == 5
+        assert root_remote.exists(test_folder_path + '/joe.odt')
+        assert root_remote.get_content(test_folder_path + '/joe.odt') == 'Some remotely updated content'
+        assert root_remote.exists(test_folder_path + '/jack.odt')
+        assert root_remote.exists(test_folder_path + '/remote.odt')
+        assert root_remote.exists(test_folder_path + '/Sub folder 1')
+        assert root_remote.exists(test_folder_path + '/Sub folder 1/sub file 1.txt')
+        assert root_remote.exists(test_folder_path + '/Remote sub folder 2')
+        assert root_remote.exists(test_folder_path + '/Remote sub folder 2/remote sub file 2.txt')
+        assert not root_remote.exists(test_folder_path + '/local.odt')
+        assert not root_remote.exists(test_folder_path + '/Local sub folder 2')
+        assert not root_remote.exists(test_folder_path + '/Local sub folder 1/local sub file 2.txt')
 
         # Add Read permission back for test user then synchronize
-        self._set_read_permission(self.user_1,
-                                  TEST_WORKSPACE_PATH + '/Test folder',
-                                  True)
+        self._set_read_permission(
+            self.user_1, TEST_WORKSPACE_PATH + '/Test folder', True)
         self.wait_sync(wait_for_async=True)
         # Remote documents should be merged with locally modified content
         # which should be unmarked as 'unsynchronized' and therefore
         # synchronized upstream.
         # Local check
-        self.assertTrue(local.exists('/Test folder'))
+        assert local.exists('/Test folder')
         children_info = local.get_children_info('/Test folder')
-        self.assertEqual(len(children_info), 8)
+        assert len(children_info) == 8
         for info in children_info:
             if info.name == 'joe.odt':
                 remote_version = info
             elif info.name.startswith('joe (') and info.name.endswith(').odt'):
                 local_version = info
-        self.assertTrue(remote_version is not None)
-        self.assertTrue(local_version is not None)
-        self.assertTrue(local.exists(remote_version.path))
-        self.assertEqual(local.get_content(remote_version.path),
-                         'Some remotely updated content')
-        self.assertTrue(local.exists(local_version.path))
-        self.assertEqual(local.get_content(local_version.path),
-                         'Some locally updated content')
-        self.assertTrue(local.exists('/Test folder/jack.odt'))
-        self.assertTrue(local.exists('/Test folder/local.odt'))
-        self.assertTrue(local.exists('/Test folder/remote.odt'))
-        self.assertTrue(local.exists('/Test folder/Sub folder 1'))
-        self.assertTrue(local.exists(
-                                '/Test folder/Sub folder 1/sub file 1.txt'))
-        self.assertTrue(local.exists('/Test folder/Local sub folder 2'))
-        self.assertTrue(local.exists(
-                    '/Test folder/Local sub folder 2/local sub file 2.txt'))
-        self.assertTrue(local.exists('/Test folder/Remote sub folder 2'))
-        self.assertTrue(local.exists(
-                    '/Test folder/Remote sub folder 2/remote sub file 2.txt'))
+        assert remote_version
+        assert local_version
+        assert local.exists(remote_version.path)
+        assert local.get_content(remote_version.path) == 'Some remotely updated content'
+        assert local.exists(local_version.path)
+        assert local.get_content(local_version.path) == 'Some locally updated content'
+        assert local.exists('/Test folder/jack.odt')
+        assert local.exists('/Test folder/local.odt')
+        assert local.exists('/Test folder/remote.odt')
+        assert local.exists('/Test folder/Sub folder 1')
+        assert local.exists('/Test folder/Sub folder 1/sub file 1.txt')
+        assert local.exists('/Test folder/Local sub folder 2')
+        assert local.exists('/Test folder/Local sub folder 2/local sub file 2.txt')
+        assert local.exists('/Test folder/Remote sub folder 2')
+        assert local.exists('/Test folder/Remote sub folder 2/remote sub file 2.txt')
         # State check
         self._check_pair_state('/Test folder', 'synchronized')
-        self._check_pair_state('/Test folder/joe.odt',
-                               'synchronized')
-        self._check_pair_state('/Test folder/local.odt',
-                               'synchronized')
-        self._check_pair_state('/Test folder/Local sub folder 2',
-                               'synchronized')
+        self._check_pair_state('/Test folder/joe.odt', 'synchronized')
+        self._check_pair_state('/Test folder/local.odt', 'synchronized')
+        self._check_pair_state('/Test folder/Local sub folder 2', 'synchronized')
         self._check_pair_state('/Test folder/Local sub folder 2/local sub file 2.txt',
-                        'synchronized')
+                               'synchronized')
         # Remote check
-        self.assertTrue(remote.exists('/Test folder'))
+        assert remote.exists('/Test folder')
         children_info = remote.get_children_info(test_folder_uid)
-        self.assertEqual(len(children_info), 8)
+        assert len(children_info) == 8
         for info in children_info:
             if info.name == 'joe.odt':
                 remote_version = info
             elif info.name.startswith('joe (') and info.name.endswith(').odt'):
                 local_version = info
-        self.assertTrue(remote_version is not None)
-        self.assertTrue(local_version is not None)
+        assert remote_version
+        assert local_version
         remote_version_ref_length = (len(remote_version.path)
                                      - len(TEST_WORKSPACE_PATH))
         remote_version_ref = remote_version.path[-remote_version_ref_length:]
-        self.assertTrue(remote.exists(remote_version_ref))
-        self.assertEqual(remote.get_content(remote_version_ref),
-                         'Some remotely updated content')
+        assert remote.exists(remote_version_ref)
+        assert remote.get_content(remote_version_ref) == 'Some remotely updated content'
         local_version_ref_length = (len(local_version.path)
                                      - len(TEST_WORKSPACE_PATH))
         local_version_ref = local_version.path[-local_version_ref_length:]
-        self.assertTrue(remote.exists(local_version_ref))
-        self.assertEqual(remote.get_content(local_version_ref),
-                         'Some locally updated content')
-        self.assertTrue(remote.exists('/Test folder/jack.odt'))
-        self.assertTrue(remote.exists('/Test folder/local.odt'))
-        self.assertTrue(remote.exists('/Test folder/remote.odt'))
-        self.assertTrue(remote.exists('/Test folder/Sub folder 1'))
-        self.assertTrue(remote.exists(
-                                '/Test folder/Sub folder 1/sub file 1.txt'))
-        self.assertTrue(remote.exists('/Test folder/Local sub folder 2'))
-        self.assertTrue(remote.exists(
-                    '/Test folder/Local sub folder 2/local sub file 2.txt'))
-        self.assertTrue(remote.exists('/Test folder/Remote sub folder 2'))
-        self.assertTrue(remote.exists(
-                    '/Test folder/Remote sub folder 2/remote sub file 2.txt'))
+        assert remote.exists(local_version_ref)
+        assert remote.get_content(local_version_ref) == 'Some locally updated content'
+        assert remote.exists('/Test folder/jack.odt')
+        assert remote.exists('/Test folder/local.odt')
+        assert remote.exists('/Test folder/remote.odt')
+        assert remote.exists('/Test folder/Sub folder 1')
+        assert remote.exists('/Test folder/Sub folder 1/sub file 1.txt')
+        assert remote.exists('/Test folder/Local sub folder 2')
+        assert remote.exists('/Test folder/Local sub folder 2/local sub file 2.txt')
+        assert remote.exists('/Test folder/Remote sub folder 2')
+        assert remote.exists('/Test folder/Remote sub folder 2/remote sub file 2.txt')
 
     def _set_read_permission(self, user, doc_path, grant):
         op_input = "doc:" + doc_path
         if grant:
-            self.root_remote_client.execute("Document.SetACE",
+            self.root_remote_client.execute(
+                "Document.SetACE",
                 op_input=op_input,
                 user=user,
                 permission="Read",
@@ -310,4 +281,4 @@ class TestSecurityUpdates(UnitTestCase):
     def _check_pair_state(self, session, local_path, pair_state):
         local_path = '/' + self.workspace_title + local_path
         doc_pair = self.engine_1.get_dao().get_state_from_local(local_path)
-        self.assertEqual(doc_pair.pair_state, pair_state)
+        assert doc_pair.pair_state == pair_state

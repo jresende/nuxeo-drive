@@ -1,4 +1,5 @@
 # coding: utf-8
+import unittest
 from urllib2 import HTTPError
 
 from nxdrive.logging_config import get_logger
@@ -56,6 +57,8 @@ class TestGroupChanges(UnitTestCase):
             if exc.code == 409:
                 # Already exists, it could happen when tests are aborted
                 self.addCleanup(remote.delete_group, group)
+            elif exc.code == 500:
+                raise unittest.SkipTest('API not available.')
             else:
                 raise exc
         else:
@@ -88,7 +91,8 @@ class TestGroupChanges(UnitTestCase):
 
     def test_group_changes_on_sync_root_child(self):
         """
-        Test changes on a group that has access to a child of a synchronization root.
+        Test changes on a group that has access to a child of a
+        synchronization root.
         """
         self.engine_1.start()
         self.wait_sync(wait_for_async=True)
@@ -125,7 +129,8 @@ class TestGroupChanges(UnitTestCase):
 
     def test_group_changes_on_sync_root_parent(self):
         """
-        Test changes on a group that has access to the parent of a synchronization root.
+        Test changes on a group that has access to the parent of a
+        synchronization root.
         """
         self.engine_1.start()
         self.wait_sync(wait_for_async=True)
@@ -153,13 +158,15 @@ class TestGroupChanges(UnitTestCase):
 
     def test_changes_with_parent_group(self):
         """
-        Test changes on the parent group of a group that has access to a synchronization root.
+        Test changes on the parent group of a group that has access to
+        a synchronization root.
         """
         self._test_group_changes_with_ancestor_groups('parentGroup')
 
     def test_changes_with_grand_parent_group(self):
         """
-        Test changes on the grandparent group of a group that has access to a synchronization root.
+        Test changes on the grandparent group of a group that has access to
+        a synchronization root.
         """
         self._test_group_changes_with_ancestor_groups('grandParentGroup')
 
@@ -208,8 +215,9 @@ class TestGroupChanges(UnitTestCase):
         remote.create_group(group_name, member_users=['driveuser_1'])
 
         if needsParentGroup:
-            log.debug('%s should not be created locally since the newly created group has not been added yet'
-                      ' as a subgroup of parentGroup', folder_path)
+            log.debug('%s should not be created locally since the newly '
+                      'created group has not been added yet as a subgroup'
+                      ' of parentGroup', folder_path)
             self.wait_sync(wait_for_async=True)
             assert not local.exists(folder_path)
 
@@ -222,7 +230,8 @@ class TestGroupChanges(UnitTestCase):
 
     def _test_group_changes_with_ancestor_groups(self, ancestor_group):
         """
-        Test changes on a descendant group of the given group that has access to a synchronization root.
+        Test changes on a descendant group of the given group that has access
+        to a synchronization root.
         """
         self.engine_1.start()
         self.wait_sync(wait_for_async=True)

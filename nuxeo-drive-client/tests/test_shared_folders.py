@@ -50,9 +50,9 @@ class TestSharedFolders(UnitTestCase):
             self.wait_sync(wait_for_async=True, wait_for_engine_1=False, wait_for_engine_2=True)
 
             # Check locally synchronized content
-            self.assertEqual(len(local_user2.get_children_info('/')), 1)
-            self.assertTrue(local_user2.exists('/Parent'))
-            self.assertTrue(local_user2.exists('/Parent/Child'))
+            assert len(local_user2.get_children_info('/')) == 1
+            assert local_user2.exists('/Parent')
+            assert local_user2.exists('/Parent/Child')
 
             # As user1 move child folder to user1's personal workspace
             remote_user1.move(child_folder_uid, user1_workspace_uid)
@@ -61,13 +61,12 @@ class TestSharedFolders(UnitTestCase):
             self.wait_sync(wait_for_async=True, wait_for_engine_1=False, wait_for_engine_2=True)
 
             # Check locally synchronized content
-            self.assertFalse(local_user2.exists('/Parent/Child'))
+            assert not local_user2.exists('/Parent/Child')
 
         finally:
             # Cleanup user1 personal workspace
             if user1_workspace_uid is not None and admin_remote_client.exists(user1_workspace_uid):
-                admin_remote_client.delete(user1_workspace_uid,
-                                           use_trash=False)
+                admin_remote_client.delete(user1_workspace_uid, use_trash=False)
 
     def test_local_changes_while_stopped(self):
         self._test_local_changes_while_not_running(False)
@@ -77,6 +76,7 @@ class TestSharedFolders(UnitTestCase):
 
     def _test_local_changes_while_not_running(self, unbind):
         """ NXDRIVE-646: not uploading renamed file from shared folder. """
+
         local_1 = self.local_root_client_1
         remote_1 = self.remote_document_client_1
         remote_2 = self.remote_document_client_2
@@ -113,16 +113,16 @@ class TestSharedFolders(UnitTestCase):
         # First checks
         file_pair_state = self.engine_1.get_dao().get_state_from_local(
            '/Folder01/File01.txt')
-        self.assertIsNotNone(file_pair_state)
+        assert file_pair_state
         file_remote_ref = file_pair_state.remote_ref
-        self.assertTrue(remote_2.exists('/Folder01'))
-        self.assertTrue(remote_2.exists('/Folder01/File01.txt'))
-        self.assertTrue(remote_2.exists('/Folder01/SubFolder01'))
-        self.assertTrue(remote_2.exists('/Folder01/SubFolder01/Image01.png'))
-        self.assertTrue(local_1.exists('/Folder01'))
-        self.assertTrue(local_1.exists('/Folder01/File01.txt'))
-        self.assertTrue(local_1.exists('/Folder01/SubFolder01'))
-        self.assertTrue(local_1.exists('/Folder01/SubFolder01/Image01.png'))
+        assert remote_2.exists('/Folder01')
+        assert remote_2.exists('/Folder01/File01.txt')
+        assert remote_2.exists('/Folder01/SubFolder01')
+        assert remote_2.exists('/Folder01/SubFolder01/Image01.png')
+        assert local_1.exists('/Folder01')
+        assert local_1.exists('/Folder01/File01.txt')
+        assert local_1.exists('/Folder01/SubFolder01')
+        assert local_1.exists('/Folder01/SubFolder01/Image01.png')
 
         # Unbind or stop engine
         if unbind:
@@ -151,33 +151,33 @@ class TestSharedFolders(UnitTestCase):
         self.wait_sync()
 
         # Check client side
-        self.assertTrue(local_1.exists('/Folder01'))
+        assert local_1.exists('/Folder01')
         if unbind:
             # File has been renamed and deleted image has been recreated
-            self.assertFalse(local_1.exists('/Folder01/File01.txt'))
-            self.assertTrue(local_1.exists('/Folder01/File01_renamed.txt'))
-            self.assertTrue(local_1.exists('/Folder01/SubFolder01/Image01.png'))
+            assert not local_1.exists('/Folder01/File01.txt')
+            assert local_1.exists('/Folder01/File01_renamed.txt')
+            assert local_1.exists('/Folder01/SubFolder01/Image01.png')
         else:
             # File has been renamed and image deleted
-            self.assertFalse(local_1.exists('/Folder01/File01.txt'))
-            self.assertTrue(local_1.exists('/Folder01/File01_renamed.txt'))
-            self.assertFalse(local_1.exists('/Folder01/SubFolder01/Image01.png'))
+            assert not local_1.exists('/Folder01/File01.txt')
+            assert local_1.exists('/Folder01/File01_renamed.txt')
+            assert not local_1.exists('/Folder01/SubFolder01/Image01.png')
 
         # Check server side
         children = remote_2.get_children_info(folder)
-        self.assertEqual(len(children), 2)
+        assert len(children) == 2
         file_info = remote_2.get_info(file_id)
         if unbind:
             # File has not been renamed and image has not been deleted
-            self.assertEqual(file_info.name, 'File01.txt')
-            self.assertTrue(remote_2.exists('/Folder01/SubFolder01/Image01.png'))
+            assert file_info.name == 'File01.txt'
+            assert remote_2.exists('/Folder01/SubFolder01/Image01.png')
             # File is in conflict
             file_pair_state = self.engine_1.get_dao().get_normal_state_from_remote(file_remote_ref)
-            self.assertEqual(file_pair_state.pair_state, 'conflicted')
+            assert file_pair_state.pair_state == 'conflicted'
         else:
             # File has been renamed and image deleted
-            self.assertEqual(file_info.name, 'File01_renamed.txt')
-            self.assertFalse(remote_2.exists('/Folder01/SubFolder01/Image01.png'))
+            assert file_info.name == 'File01_renamed.txt'
+            assert not remote_2.exists('/Folder01/SubFolder01/Image01.png')
 
     def test_conflict_resolution_with_renaming(self):
         """ NXDRIVE-645: shared Folders conflict resolution with renaming. """
@@ -193,13 +193,13 @@ class TestSharedFolders(UnitTestCase):
 
         # First checks, everything should be online for every one
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(remote.exists('/Final'))
-        self.assertTrue(remote.exists('/Final/Aerial04.png'))
-        self.assertTrue(local.exists('/Final'))
-        self.assertTrue(local.exists('/Final/Aerial04.png'))
+        assert remote.exists('/Final')
+        assert remote.exists('/Final/Aerial04.png')
+        assert local.exists('/Final')
+        assert local.exists('/Final/Aerial04.png')
         folder_pair_state = self.engine_1.get_dao().get_state_from_local(
             '/' + self.workspace_title + '/Final')
-        self.assertIsNotNone(folder_pair_state)
+        assert folder_pair_state
 
         # Stop clients
         self.engine_1.stop()
@@ -215,14 +215,14 @@ class TestSharedFolders(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Check remote
-        self.assertTrue(remote.exists('/Finished'))
-        self.assertTrue(remote.exists('/Finished/Aerial04.png'))
+        assert remote.exists('/Finished')
+        assert remote.exists('/Finished/Aerial04.png')
 
         # Check client
-        self.assertTrue(local.exists('/Finished'))
-        self.assertTrue(local.exists('/Finished/Aerial04.png'))
+        assert local.exists('/Finished')
+        assert local.exists('/Finished/Aerial04.png')
 
         # Check folder status
         folder_pair_state = self.engine_1.get_dao().get_state_from_id(
             folder_pair_state.id)
-        self.assertEqual(folder_pair_state.last_error, 'DEDUP')
+        assert folder_pair_state.last_error == 'DEDUP'

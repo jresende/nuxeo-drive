@@ -3,6 +3,7 @@ import os
 import tempfile
 from unittest import TestCase
 
+import pytest
 from mock import Mock
 
 from nxdrive.logging_config import get_logger
@@ -17,6 +18,8 @@ class ReportTest(TestCase):
 
     def setUp(self):
         self.folder = tempfile.mkdtemp(u'-nxdrive-tests')
+        self.addCleanup(clean_dir, self.folder)
+
         options = Mock()
         options.debug = False
         options.force_locale = None
@@ -31,7 +34,6 @@ class ReportTest(TestCase):
         # Remove singleton
         self.manager.dispose_db()
         Manager._singleton = None
-        clean_dir(self.folder)
 
     def test_logs(self):
         log.debug("Strange encoding \xe9")
@@ -45,7 +47,7 @@ class ReportTest(TestCase):
             log.exception(repr(e))
             log.exception(unicode(e))  # Works but not recommended
 
-            with self.assertRaises(UnicodeEncodeError):
+            with pytest.raises(UnicodeEncodeError):
                 log.exception(str(e))
 
                 # Using the syntax below will raise the same UnicodeEncodeError

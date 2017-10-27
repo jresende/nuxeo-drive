@@ -463,7 +463,7 @@ def guess_digest_algorithm(digest):
         return 'md5'
     elif len(digest) == 40:
         return 'sha1'
-    raise Exception('Unknown digest algorithm for %s' % digest)
+    raise ValueError('Unknown digest algorithm for %r' % digest)
 
 
 def guess_server_url(url, login_page=DRIVE_STARTUP_PAGE, timeout=5):

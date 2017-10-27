@@ -4,11 +4,9 @@ import shutil
 import tempfile
 
 from common_unit_test import UnitTestCase
-from nxdrive.logging_config import get_logger
 from tests.common import clean_dir
 from tests.common_unit_test import FILE_CONTENT
 
-#log = get_logger(__name__)
 TEST_TIMEOUT = 60
 
 
@@ -37,7 +35,7 @@ class TestLocalPaste(UnitTestCase):
 
         # create  folder a1 and a2 under a temp folder
         self.local_temp = tempfile.mkdtemp(self.TEMP_FOLDER)
-        self.addCleanup(shutil.rmtree, self.local_temp)
+        self.addCleanup(clean_dir, self.local_temp)
 
         self.folder1 = os.path.join(self.local_temp, self.FOLDER_A1)
         os.makedirs(self.folder1)

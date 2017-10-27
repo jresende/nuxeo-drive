@@ -2,6 +2,8 @@
 import hashlib
 from urllib2 import HTTPError
 
+import pytest
+
 from nxdrive.client import LocalClient
 from tests.common_unit_test import RemoteDocumentClientForTests, UnitTestCase
 
@@ -61,9 +63,9 @@ class TestPermissionHierarchy(UnitTestCase):
         # Create test folder in user workspace as test user
         test_folder_uid = self.user1.make_folder(
             self.workspace_uid, 'test_folder')
+
         # Create a document in the test folder
-        self.user1.make_file(
-            test_folder_uid, 'test_file.txt', 'Some content.')
+        self.user1.make_file(test_folder_uid, 'test_file.txt', 'Some content.')
 
         # Register test folder as a sync root
         self.user1.register_as_root(test_folder_uid)
@@ -76,8 +78,8 @@ class TestPermissionHierarchy(UnitTestCase):
 
         # Check locally synchronized content
         root = '/My Docs/test_folder'
-        self.assertTrue(self.local_client_1.exists(root))
-        self.assertTrue(self.local_client_1.exists(root + '/test_file.txt'))
+        assert self.local_client_1.exists(root)
+        assert self.local_client_1.exists(root + '/test_file.txt')
 
         # Delete test folder
         self.user1.delete(test_folder_uid)
@@ -86,9 +88,8 @@ class TestPermissionHierarchy(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Check locally synchronized content
-        self.assertFalse(self.local_client_1.exists(root))
-        self.assertEqual(
-            len(self.local_client_1.get_children_info('/My Docs')), 0)
+        assert not self.local_client_1.exists(root)
+        assert not self.local_client_1.get_children_info('/My Docs')
 
     def test_sync_delete_shared_folder(self):
         # Register user workspace as a sync root for user1
@@ -100,7 +101,7 @@ class TestPermissionHierarchy(UnitTestCase):
         # Wait for synchronization
         self.wait_sync(wait_for_async=True)
         # Check locally synchronized content
-        self.assertTrue(self.local_client_1.exists('/My Docs'))
+        assert self.local_client_1.exists('/My Docs')
 
         # Create test folder in user workspace as user1
         test_folder_uid = self.user1.make_folder(
@@ -108,7 +109,7 @@ class TestPermissionHierarchy(UnitTestCase):
         # Wait for synchronization
         self.wait_sync(wait_for_async=True)
         # Check locally synchronized content
-        self.assertTrue(self.local_client_1.exists('/My Docs/test_folder'))
+        assert self.local_client_1.exists('/My Docs/test_folder')
 
         # Grant ReadWrite permission to user2 on test folder
         self.set_readonly(self.user_2, test_folder_uid, grant=False)
@@ -125,9 +126,8 @@ class TestPermissionHierarchy(UnitTestCase):
         # Synchronize deletion
         self.wait_sync(wait_for_async=True)
         # Check locally synchronized content
-        self.assertFalse(self.local_client_1.exists('/My Docs/test_folder'))
-        self.assertEqual(
-            len(self.local_client_1.get_children_info('/My Docs')), 1)
+        assert not self.local_client_1.exists('/My Docs/test_folder')
+        assert len(self.local_client_1.get_children_info('/My Docs')) == 1
 
     def test_sync_unshared_folder(self):
         # Register user workspace as a sync root for user1
@@ -141,8 +141,8 @@ class TestPermissionHierarchy(UnitTestCase):
                        wait_for_engine_2=True,
                        wait_for_engine_1=False)
         # Check locally synchronized content
-        self.assertTrue(self.local_client_2.exists('/My Docs'))
-        self.assertTrue(self.local_client_2.exists('/Other Docs'))
+        assert self.local_client_2.exists('/My Docs')
+        assert self.local_client_2.exists('/Other Docs')
 
         # Create test folder in user workspace as user1
         test_folder_uid = self.user1.make_folder(self.workspace_uid, 'Folder A')
@@ -160,13 +160,14 @@ class TestPermissionHierarchy(UnitTestCase):
         self.wait_sync(wait_for_async=True,
                        wait_for_engine_2=True,
                        wait_for_engine_1=False)
-        self.assertTrue(self.local_client_2.exists('/Other Docs/Folder A'))
-        self.assertTrue(self.local_client_2.exists(
-            '/Other Docs/Folder A/Folder B/Folder C/Folder D/Folder E'))
+        assert self.local_client_2.exists('/Other Docs/Folder A')
+        assert self.local_client_2.exists('/Other Docs/Folder A/Folder B/Folder C/Folder D/Folder E')
+
         # Use for later get_fs_item checks
         folder_b_fs = self.local_client_2.get_remote_id(
             '/Other Docs/Folder A/Folder B')
         folder_a_fs = self.local_client_2.get_remote_id('/Other Docs/Folder A')
+
         # Unshare Folder A and share Folder C
         self.admin.execute('Document.RemoveACL',
                            op_input='doc:' + test_folder_uid,
@@ -176,16 +177,13 @@ class TestPermissionHierarchy(UnitTestCase):
         self.wait_sync(wait_for_async=True,
                        wait_for_engine_2=True,
                        wait_for_engine_1=False)
-        self.assertFalse(self.local_client_2.exists('/Other Docs/Folder A'))
-        self.assertTrue(self.local_client_2.exists('/Other Docs/Folder C'))
-        self.assertTrue(self.local_client_2.exists(
-            '/Other Docs/Folder C/Folder D/Folder E'))
+        assert not self.local_client_2.exists('/Other Docs/Folder A')
+        assert self.local_client_2.exists('/Other Docs/Folder C')
+        assert self.local_client_2.exists('/Other Docs/Folder C/Folder D/Folder E')
 
         # Verify that we dont have any 403 errors
-        self.assertIsNone(self.remote_file_system_client_2.get_fs_item(
-            folder_a_fs))
-        self.assertIsNone(self.remote_file_system_client_2.get_fs_item(
-            folder_b_fs))
+        assert not self.remote_file_system_client_2.get_fs_item(folder_a_fs)
+        assert not self.remote_file_system_client_2.get_fs_item(folder_b_fs)
 
     def test_sync_move_permission_removal(self):
         root = self.user1.make_folder(self.workspace_uid, 'testing')
@@ -206,7 +204,7 @@ class TestPermissionHierarchy(UnitTestCase):
         self.set_readonly(self.user_2, readonly)
 
         # Basic test to be sure we are in RO mode
-        with self.assertRaises(HTTPError):
+        with pytest.raises(HTTPError):
             self.user2.make_file(readonly, 'test.txt', content='test')
 
         # ReadWrite folder for user 2
@@ -220,25 +218,22 @@ class TestPermissionHierarchy(UnitTestCase):
 
         # Checks
         root = '/Other Docs/testing/'
-        self.assertTrue(self.local_client_2.exists(root + 'ReadFolder'))
-        self.assertTrue(self.local_client_2.exists(
-            root + 'ReadFolder/file_ro.txt'))
-        self.assertTrue(self.local_client_2.exists(root + 'WriteFolder'))
-        self.assertEqual(
-            self.local_client_2.get_content(root + 'ReadFolder/file_ro.txt'),
-            'Read-only doc.')
+        assert self.local_client_2.exists(root + 'ReadFolder')
+        assert self.local_client_2.exists(root + 'ReadFolder/file_ro.txt')
+        assert self.local_client_2.exists(root + 'WriteFolder')
+        body = self.local_client_2.get_content(root + 'ReadFolder/file_ro.txt')
+        assert body == 'Read-only doc.'
 
         # Move the read-only file
-        self.local_client_2.move(root + 'ReadFolder/file_ro.txt',
-                                 root + 'WriteFolder',
-                                 name='file_rw.txt')
+        self.local_client_2.move(
+            root + 'ReadFolder/file_ro.txt', root + 'WriteFolder', name='file_rw.txt')
 
         # Remove RO on ReadFolder folder
         self.set_readonly(self.user_2, readonly, grant=False)
 
         # Edit the new writable file
-        self.local_client_2.update_content(root + 'WriteFolder/file_rw.txt',
-                                           'Now a fresh read-write doc.')
+        self.local_client_2.update_content(
+            root + 'WriteFolder/file_rw.txt', 'Now a fresh read-write doc.')
 
         # Sync
         self.wait_sync(wait_for_async=True,
@@ -246,22 +241,18 @@ class TestPermissionHierarchy(UnitTestCase):
                        wait_for_engine_2=True)
 
         # Local checks
-        self.assertFalse(self.local_client_2.exists(
-            root + 'ReadFolder/file_ro.txt'))
-        self.assertFalse(self.local_client_2.exists(
-            root + 'WriteFolder/file_ro.txt'))
-        self.assertTrue(self.local_client_2.exists(
-            root + 'WriteFolder/file_rw.txt'))
-        self.assertEqual(
-            self.local_client_2.get_content(root + 'WriteFolder/file_rw.txt'),
-            'Now a fresh read-write doc.')
+        assert not self.local_client_2.exists(root + 'ReadFolder/file_ro.txt')
+        assert not self.local_client_2.exists(root + 'WriteFolder/file_ro.txt')
+        assert self.local_client_2.exists(root + 'WriteFolder/file_rw.txt')
+        body = self.local_client_2.get_content(root + 'WriteFolder/file_rw.txt')
+        assert body == 'Now a fresh read-write doc.'
 
         # Remote checks
-        self.assertEqual(len(self.user1.get_children_info(readonly)), 0)
+        assert not self.user1.get_children_info(readonly)
         children = self.user1.get_children_info(readwrite)
-        self.assertEqual(len(children), 1)
-        self.assertEqual(children[0].filename, 'file_rw.txt')
+        assert len(children) == 1
+        assert children[0].filename == 'file_rw.txt'
         good_digest = hashlib.md5('Now a fresh read-write doc.').hexdigest()
-        self.assertEqual(children[0].digest, good_digest)
+        assert children[0].digest == good_digest
         # No errors check
-        self.assertEqual(len(self.engine_2.get_dao().get_errors()), 0)
+        assert not self.engine_2.get_dao().get_errors()

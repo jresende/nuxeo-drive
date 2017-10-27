@@ -261,18 +261,18 @@ class UnitTestCase(SimpleUnitTestCase):
 
         # Call the Nuxeo operation to setup the integration test environment
         credentials = self.root_remote_client.execute(
-            "NuxeoDrive.SetupIntegrationTests",
-            userNames="user_1, user_2", permission='ReadWrite')
+            'NuxeoDrive.SetupIntegrationTests',
+            userNames='user_1, user_2', permission='ReadWrite')
 
         credentials = [c.strip().split(u":") for c in credentials.split(u",")]
         self.user_1, self.password_1 = credentials[0]
         self.user_2, self.password_2 = credentials[1]
         ws_info = self.root_remote_client.fetch(u'/default-domain/workspaces/')
         children = self.root_remote_client.get_children(ws_info['uid'])
-        log.debug("SuperWorkspace info: %r", ws_info)
-        log.debug("SuperWorkspace children: %r", children)
+        log.debug('SuperWorkspace info: %r', ws_info)
+        log.debug('SuperWorkspace children: %r', children)
         ws_info = self.root_remote_client.fetch(TEST_WORKSPACE_PATH)
-        log.debug("Workspace info: %r", ws_info)
+        log.debug('Workspace info: %r', ws_info)
         self.workspace = ws_info[u'uid']
         self.workspace_title = ws_info[u'title']
         self.workspace_1 = self.workspace
@@ -294,21 +294,13 @@ class UnitTestCase(SimpleUnitTestCase):
         if server_profile is not None:
             self.root_remote_client.deactivate_profile(server_profile)
 
-    def get_local_client(self, path):
-        if AbstractOSIntegration.is_windows():
-            from tests.local_client_win32 import WindowsLocalClient
-            return WindowsLocalClient(path)
-        if AbstractOSIntegration.is_mac():
-            from tests.local_client_darwin import MacLocalClient
-            return MacLocalClient(path)
-        return LocalClient(path)
-
     def setUpApp(self, server_profile=None, register_roots=True):
         # Save the current path for test files
         self.location = dirname(__file__)
 
         # Check the Nuxeo server test environment
-        self.nuxeo_url = os.environ.get('NXDRIVE_TEST_NUXEO_URL', 'http://localhost:8080/nuxeo')
+        self.nuxeo_url = os.environ.get(
+            'NXDRIVE_TEST_NUXEO_URL', 'http://localhost:8080/nuxeo')
         self.admin_user = os.environ.get('NXDRIVE_TEST_USER', 'Administrator')
         self.password = os.environ.get('NXDRIVE_TEST_PASSWORD', 'Administrator')
         self.build_workspace = os.environ.get('WORKSPACE')
@@ -321,7 +313,8 @@ class UnitTestCase(SimpleUnitTestCase):
                 os.makedirs(self.tmpdir)
             self.addCleanup(clean_dir, self.tmpdir)
 
-        self.upload_tmp_dir = tempfile.mkdtemp(u'-nxdrive-uploads', dir=self.tmpdir)
+        self.upload_tmp_dir = tempfile.mkdtemp(
+            u'-nxdrive-uploads', dir=self.tmpdir)
 
         # Check the local filesystem test environment
         self.local_test_folder_1 = tempfile.mkdtemp(u'drive-1', dir=self.tmpdir)
@@ -330,8 +323,10 @@ class UnitTestCase(SimpleUnitTestCase):
         # Correct the casing of the temp folders for windows
         if sys.platform == 'win32':
             import win32api
-            self.local_test_folder_1 = win32api.GetLongPathNameW(self.local_test_folder_1)
-            self.local_test_folder_2 = win32api.GetLongPathNameW(self.local_test_folder_2)
+            self.local_test_folder_1 = win32api.GetLongPathNameW(
+                self.local_test_folder_1)
+            self.local_test_folder_2 = win32api.GetLongPathNameW(
+                self.local_test_folder_2)
 
         self.local_nxdrive_folder_1 = os.path.join(
             self.local_test_folder_1, u'Nuxeo Drive')
@@ -400,38 +395,119 @@ class UnitTestCase(SimpleUnitTestCase):
         # and folders
         self.remote_document_client_1 = RemoteDocumentClientForTests(
             self.nuxeo_url, self.user_1, u'nxdrive-test-device-1',
-            self.version,
-            password=self.password_1, base_folder=self.workspace_1,
-            upload_tmp_dir=self.upload_tmp_dir)
+            self.version, password=self.password_1,
+            base_folder=self.workspace_1, upload_tmp_dir=self.upload_tmp_dir)
 
         self.remote_document_client_2 = RemoteDocumentClientForTests(
             self.nuxeo_url, self.user_2, u'nxdrive-test-device-2',
-            self.version,
-            password=self.password_2, base_folder=self.workspace_2,
-            upload_tmp_dir=self.upload_tmp_dir)
+            self.version, password=self.password_2,
+            base_folder=self.workspace_2, upload_tmp_dir=self.upload_tmp_dir)
 
         # File system client to be used to create remote test documents
         # and folders
         self.remote_file_system_client_1 = RemoteFileSystemClient(
             self.nuxeo_url, self.user_1, u'nxdrive-test-device-1',
-            self.version,
-            password=self.password_1, upload_tmp_dir=self.upload_tmp_dir)
+            self.version, password=self.password_1,
+            upload_tmp_dir=self.upload_tmp_dir)
 
         self.remote_file_system_client_2 = RemoteFileSystemClient(
             self.nuxeo_url, self.user_2, u'nxdrive-test-device-2',
-            self.version,
-            password=self.password_2, upload_tmp_dir=self.upload_tmp_dir)
+            self.version, password=self.password_2,
+            upload_tmp_dir=self.upload_tmp_dir)
 
         self.remote_restapi_client_admin = RestAPIClient(
             self.nuxeo_url, self.admin_user, u'nxdrive-test-device-2',
-            self.version,
-            password=self.password
-        )
+            self.version, password=self.password)
 
         # Register sync roots
         if register_roots:
             self.remote_document_client_1.register_as_root(self.workspace_1)
+            self.addCleanup(self.root_remote_client.unregister_as_root, self.workspace_1)
             self.remote_document_client_2.register_as_root(self.workspace_2)
+            self.addCleanup(self.root_remote_client.unregister_as_root, self.workspace_2)
+
+    def tearDownApp(self, server_profile=None):
+        if self.tearedDown:
+            return
+        if (hasattr(self.result, 'wasSuccessful')
+            and not self.result.wasSuccessful()):
+            self.generate_report()
+        log.debug('TearDown unit test')
+
+        # Unbind all
+        self.manager_1.unbind_all()
+        self.manager_1.dispose_db()
+        self.manager_2.unbind_all()
+        self.manager_2.dispose_db()
+        Manager._singleton = None
+        self.tearDownServer(server_profile)
+
+        if hasattr(self, 'engine_1'):
+            del self.engine_1
+        self.engine_1 = None
+        if hasattr(self, 'engine_2'):
+            del self.engine_2
+        self.engine_2 = None
+        del self.local_client_1
+        self.local_client_1 = None
+        del self.local_client_2
+        self.local_client_2 = None
+        del self.remote_document_client_1
+        self.remote_document_client_1 = None
+        del self.remote_document_client_2
+        self.remote_document_client_2 = None
+        del self.remote_file_system_client_1
+        self.remote_file_system_client_1 = None
+        del self.remote_file_system_client_2
+        self.remote_file_system_client_2 = None
+        self.tearedDown = True
+
+    def setUp_(self):
+        remote = self.remote_restapi_client_admin
+
+        # Create test workspace
+        workspaces_path = '/default-domain/workspaces'
+        import uuid
+        wspace = uuid.uuid4().hex
+        workspace_name = 'wstest-{}'.format(wspace)
+        self.workspace_path = workspaces_path + '/' + workspace_name
+        workspace = {
+            'entity-type': 'document',
+            'name': workspace_name,
+            'type': 'Workspace',
+            'properties': {'dc:title': 'Test Workspace {}'.format(wspace)},
+        }
+        ws_info = remote.execute(
+            'path' + workspaces_path, method='POST', body=workspace)
+        self.addCleanup(
+            remote.execute, 'path' + self.workspace_path, method='DELETE')
+
+        self.workspace = ws_info[u'uid']
+        self.workspace_title = ws_info[u'title']
+        self.workspace_1 = self.workspace
+        self.workspace_2 = self.workspace
+        self.workspace_title_1 = self.workspace_title
+        self.workspace_title_2 = self.workspace_title
+
+    def tearDown_(self):
+        try:
+            unittest.TestCase.tearDown(self)
+        except StandardError:
+            pass
+        if not self.tearedDown:
+            try:
+                self.tearDownApp()
+            except StandardError:
+                pass
+
+    def get_local_client(self, path):
+        if AbstractOSIntegration.is_windows():
+            from tests.local_client_win32 import WindowsLocalClient
+            return WindowsLocalClient(path)
+        if AbstractOSIntegration.is_mac():
+            from tests.local_client_darwin import MacLocalClient
+            return MacLocalClient(path)
+        return LocalClient(path)
 
     def bind_engine(self, number, start_engine=True):
         number_str = str(number)
@@ -639,56 +715,6 @@ class UnitTestCase(SimpleUnitTestCase):
         del self.app
         log.debug('UnitTest run finished')
 
-    def tearDown(self):
-        try:
-            unittest.TestCase.tearDown(self)
-        except StandardError:
-            pass
-        if not self.tearedDown:
-            try:
-                self.tearDownApp()
-            except StandardError:
-                pass
-
-    def tearDownApp(self, server_profile=None):
-        if self.tearedDown:
-            return
-        if (hasattr(self.result, 'wasSuccessful')
-                and not self.result.wasSuccessful()):
-                self.generate_report()
-        log.debug('TearDown unit test')
-
-        # Unregister sync roots
-        self.root_remote_client.unregister_as_root(self.workspace_2)
-        self.root_remote_client.unregister_as_root(self.workspace_1)
-
-        # Unbind all
-        self.manager_1.unbind_all()
-        self.manager_1.dispose_db()
-        self.manager_2.unbind_all()
-        self.manager_2.dispose_db()
-        Manager._singleton = None
-        self.tearDownServer(server_profile)
-
-        if hasattr(self, 'engine_1'):
-            del self.engine_1
-        self.engine_1 = None
-        if hasattr(self, 'engine_2'):
-            del self.engine_2
-        self.engine_2 = None
-        del self.local_client_1
-        self.local_client_1 = None
-        del self.local_client_2
-        self.local_client_2 = None
-        del self.remote_document_client_1
-        self.remote_document_client_1 = None
-        del self.remote_document_client_2
-        self.remote_document_client_2 = None
-        del self.remote_file_system_client_1
-        self.remote_file_system_client_1 = None
-        del self.remote_file_system_client_2
-        self.remote_file_system_client_2 = None
-        self.tearedDown = True
 
     def _interact(self, pause=0):
         self.app.processEvents()

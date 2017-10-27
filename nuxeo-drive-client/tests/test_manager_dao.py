@@ -60,23 +60,25 @@ class ManagerDAOTest(unittest.TestCase):
         dao.lock_path('/test_1', 1, 'doc_id_1')
         dao.lock_path('/test_2', 2, 'doc_id_2')
         dao.lock_path('/test_3', 3, 'doc_id_3')
+        
         # Verify that it does fail
         dao.lock_path('/test_3', 4, 'doc_id_4')
         locks = dao.get_locked_paths()
-        self.assertEqual(len(locks), 3)
+        assert len(locks) == 3
         dao.unlock_path('/test')
         locks = dao.get_locked_paths()
-        self.assertEqual(len(locks), 3)
+        assert len(locks) == 3
         dao.unlock_path('/test_1')
         locks = dao.get_locked_paths()
-        self.assertEqual(len(locks), 2)
-        self.assertEqual(locks[0].path, '/test_2')
-        self.assertEqual(locks[0].process, 2)
-        self.assertEqual(locks[0].remote_id, 'doc_id_2')
-        self.assertEqual(locks[1].path, '/test_3')
+        assert len(locks) == 2
+        assert locks[0].path == '/test_2'
+        assert locks[0].process == 2
+        assert locks[0].remote_id == 'doc_id_2'
+        assert locks[1].path == '/test_3'
+        
         # Verify it has auto-update
-        self.assertEqual(locks[1].process, 4)
-        self.assertEqual(locks[1].remote_id, 'doc_id_4')
+        assert locks[1].process == 4
+        assert locks[1].remote_id == 'doc_id_4'
 
     def test_notifications(self):
         from nxdrive.notification import Notification
@@ -87,15 +89,18 @@ class ManagerDAOTest(unittest.TestCase):
         dao = manager.get_dao()
         dao.insert_notification(notif)
         dao.insert_notification(notif2)
-        self.assertEqual(len(dao.get_notifications()), 2)
+        assert len(dao.get_notifications()) == 2
+        
         dao.discard_notification(notif.uid)
-        self.assertEqual(len(dao.get_notifications(discarded=False)), 1)
-        self.assertEqual(len(dao.get_notifications()), 2)
+        assert len(dao.get_notifications(discarded=False)) == 1
+        assert len(dao.get_notifications()) == 2
+        
         dao.remove_notification(notif.uid)
-        self.assertEqual(len(dao.get_notifications()), 1)
+        assert len(dao.get_notifications()) == 1
+        
         dao.discard_notification(notif2.uid)
-        self.assertEqual(len(dao.get_notifications()), 1)
-        self.assertEqual(len(dao.get_notifications(discarded=True)), 1)
+        assert len(dao.get_notifications()) == 1
+        assert len(dao.get_notifications(discarded=True)) == 1
 
     def test_migration_db_v1(self):
         # Initialize old DB
@@ -131,31 +136,31 @@ class ManagerDAOTest(unittest.TestCase):
         dao = manager.get_dao()
 
         # Check Manager config
-        self.assertEqual(dao.get_config('device_id'), device_id)
-        self.assertEqual(dao.get_config('proxy_config'), 'Manual')
-        self.assertEqual(dao.get_config('proxy_type'), 'http')
-        self.assertEqual(dao.get_config('proxy_server'), 'proxy.server.com')
-        self.assertEqual(dao.get_config('proxy_port'), '80')
-        self.assertEqual(dao.get_config('proxy_authenticated'), '1')
-        self.assertEqual(dao.get_config('proxy_username'), 'Administrator')
-        self.assertEqual(dao.get_config('auto_update'), '1')
-        self.assertEqual(dao.get_config('proxy_config'), 'Manual')
+        assert dao.get_config('device_id') == device_id
+        assert dao.get_config('proxy_config') == 'Manual'
+        assert dao.get_config('proxy_type') == 'http'
+        assert dao.get_config('proxy_server') == 'proxy.server.com'
+        assert dao.get_config('proxy_port') == '80'
+        assert dao.get_config('proxy_authenticated') == '1'
+        assert dao.get_config('proxy_username') == 'Administrator'
+        assert dao.get_config('auto_update') == '1'
+        assert dao.get_config('proxy_config') == 'Manual'
 
         # Check engine definition
         engines = dao.get_engines()
-        self.assertEqual(len(engines), 1)
+        assert len(engines) == 1
         engine = engines[0]
-        self.assertEqual(engine.engine, 'NXDRIVE')
-        self.assertEqual(engine.name, manager._get_engine_name(self.nuxeo_url))
-        self.assertTrue(local_folder in engine.local_folder)
+        assert engine.engine == 'NXDRIVE'
+        assert engine.name == manager._get_engine_name(self.nuxeo_url)
+        assert local_folder in engine.local_folder
 
         # Check engine config
         engine_uid = engine.uid
         engine_db = os.path.join(self.test_folder, 'ndrive_%s.db' % engine_uid)
         engine_dao = EngineDAO(engine_db)
-        self.assertEqual(engine_dao.get_config('server_url'), self.nuxeo_url)
-        self.assertEqual(engine_dao.get_config('remote_user'), 'Administrator')
-        self.assertEqual(engine_dao.get_config('remote_token'), token)
+        assert engine_dao.get_config('server_url') == self.nuxeo_url
+        assert engine_dao.get_config('remote_user') == 'Administrator'
+        assert engine_dao.get_config('remote_token') == token
 
         engine_dao.dispose()
         manager.dispose_all()

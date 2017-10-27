@@ -50,7 +50,7 @@ class StubLocalClient(object):
         doc_2 = self.local_client_1.make_file(
             '/', 'Document 2.txt', content=SOME_TEXT_CONTENT)
         assert self.local_client_1.exists(doc_2)
-        assert self.local_client_1.get_content(doc_2) ** SOME_TEXT_CONTENT
+        assert self.local_client_1.get_content(doc_2) == SOME_TEXT_CONTENT
 
         doc_2_info = self.local_client_1.get_info(doc_2)
         assert doc_2_info.name == 'Document 2.txt'
@@ -68,7 +68,7 @@ class StubLocalClient(object):
         folder_1_info = self.local_client_1.get_info(folder_1)
         assert folder_1_info.name == 'A new folder'
         assert folder_1_info.path == folder_1
-        assert folder_1_info.get_digest()
+        assert not folder_1_info.get_digest()
         assert folder_1_info.folderish
 
         doc_3 = self.local_client_1.make_file(

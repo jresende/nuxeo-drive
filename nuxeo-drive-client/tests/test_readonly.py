@@ -42,11 +42,11 @@ class TestReadOnly(UnitTestCase):
                          'Content')
         self._set_readonly_permission(self.user_1, TEST_WORKSPACE_PATH + '/Test folder', True)
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.odt'))
-        self.assertTrue(local.exists('/Test folder/jack.odt'))
-        self.assertTrue(local.exists('/Test folder/Sub folder 1'))
-        self.assertTrue(local.exists('/Test folder/Sub folder 1/sub file 1.txt'))
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.odt')
+        assert local.exists('/Test folder/jack.odt')
+        assert local.exists('/Test folder/Sub folder 1')
+        assert local.exists('/Test folder/Sub folder 1/sub file 1.txt')
 
         # Local changes
         time.sleep(OS_STAT_MTIME_RESOLUTION)
@@ -65,11 +65,11 @@ class TestReadOnly(UnitTestCase):
 
         # TODO Might rollback if rollback only !
         self.wait_sync()
-        self.assertFalse(remote.exists('/Test folder/local.odt'))
-        self.assertFalse(remote.exists('/Test folder/Local sub folder 2'))
-        self.assertFalse(remote.exists('/Test folder/Local sub folder 2/local sub file 2.txt'))
-        self.assertTrue(local.exists('/Test folder/local.odt'))
-        self.assertEqual(remote.get_content('/Test folder/joe.odt'), 'Some content')
+        assert not remote.exists('/Test folder/local.odt')
+        assert not remote.exists('/Test folder/Local sub folder 2')
+        assert not remote.exists('/Test folder/Local sub folder 2/local sub file 2.txt')
+        assert local.exists('/Test folder/local.odt')
+        assert remote.get_content('/Test folder/joe.odt') == 'Some content'
 
     def touch(self, fname):
         try:
@@ -86,17 +86,17 @@ class TestReadOnly(UnitTestCase):
     def test_readonly_user_access(self):
         # Should not be able to create content in root folder
         fname = os.path.join(self.local_nxdrive_folder_1, 'test.txt')
-        self.assertFalse(self.touch(fname), "Should not be able to create in ROOT folder")
+        assert not self.touch(fname), "Should not be able to create in ROOT folder"
         fname = os.path.join(self.sync_root_folder_1, 'test.txt')
-        self.assertTrue(self.touch(fname), "Should be able to create in SYNCROOT folder")
+        assert self.touch(fname), "Should be able to create in SYNCROOT folder"
         fname = os.path.join(self.sync_root_folder_1, 'Test folder', 'test.txt')
-        self.assertFalse(self.touch(fname), "Should be able to create in SYNCROOT folder")
+        assert not self.touch(fname), "Should be able to create in SYNCROOT folder"
         fname = os.path.join(self.sync_root_folder_1, 'Test folder', 'Sub folder 1', 'test.txt')
-        self.assertFalse(self.touch(fname), "Should be able to create in SYNCROOT folder")
+        assert not self.touch(fname), "Should be able to create in SYNCROOT folder"
 
     @pytest.mark.skipif(
         sys.platform == 'win32',
-        reason='Windows does not take into account read-only protection.')
+        reason='Windows does not care about read-only.')
     @RandomBug('NXDRIVE-816', target='mac', mode='BYPASS')
     def test_file_readonly_change(self):
         local = self.local_client_1
@@ -111,17 +111,17 @@ class TestReadOnly(UnitTestCase):
                          'Content')
         self._set_readonly_permission(self.user_1, TEST_WORKSPACE_PATH + '/Test folder', True)
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/Test folder/joe.odt'))
-        self.assertTrue(local.exists('/Test folder/jack.odt'))
-        self.assertTrue(local.exists('/Test folder/Sub folder 1'))
-        self.assertTrue(local.exists('/Test folder/Sub folder 1/sub file 1.txt'))
+        assert local.exists('/Test folder')
+        assert local.exists('/Test folder/joe.odt')
+        assert local.exists('/Test folder/jack.odt')
+        assert local.exists('/Test folder/Sub folder 1')
+        assert local.exists('/Test folder/Sub folder 1/sub file 1.txt')
 
         # Update the content on the server
         self.root_remote_client.update_content(TEST_WORKSPACE_PATH + '/Test folder/joe.odt',
                                                'Some remotely updated content', 'joe.odt')
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.get_content('/Test folder/joe.odt'), 'Some remotely updated content')
+        assert local.get_content('/Test folder/joe.odt'), 'Some remotely updated content'
 
         # Remove the readonly
         self._set_readonly_permission(self.user_1, TEST_WORKSPACE_PATH + '/Test folder', False)
@@ -129,8 +129,8 @@ class TestReadOnly(UnitTestCase):
         fname = os.path.join(self.sync_root_folder_1, 'Test folder', 'test.txt')
         fname2 = os.path.join(self.sync_root_folder_1, 'Test folder', 'Sub folder 1', 'test.txt')
         # Check it works
-        self.assertTrue(self.touch(fname))
-        self.assertTrue(self.touch(fname2))
+        assert self.touch(fname)
+        assert self.touch(fname2)
 
         # First remove the files
         os.remove(fname)
@@ -140,8 +140,8 @@ class TestReadOnly(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Check it works
-        self.assertFalse(self.touch(fname))
-        self.assertFalse(self.touch(fname2))
+        assert not self.touch(fname)
+        assert not self.touch(fname2)
 
     def test_locked_document(self):
         remote = self.remote_document_client_1
@@ -151,26 +151,26 @@ class TestReadOnly(UnitTestCase):
 
         # Check readonly flag is not set for a document that isn't locked
         user1_file_path = os.path.join(self.sync_root_folder_1, 'Test locking', 'myDoc.odt')
-        self.assertTrue(os.path.exists(user1_file_path))
-        self.assertTrue(self.touch(user1_file_path))
+        assert os.path.exists(user1_file_path)
+        assert self.touch(user1_file_path)
         self.wait_sync()
 
         # Check readonly flag is not set for a document locked by the current user
         remote.lock('/Test locking/myDoc.odt')
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(self.touch(user1_file_path))
+        assert self.touch(user1_file_path)
         remote.unlock('/Test locking/myDoc.odt')
         self.wait_sync(wait_for_async=True)
 
         # Check readonly flag is set for a document locked by another user
         self.remote_document_client_2.lock('/Test locking/myDoc.odt')
         self.wait_sync(wait_for_async=True)
-        self.assertFalse(self.touch(user1_file_path))
+        assert not self.touch(user1_file_path)
 
         # Check readonly flag is unset for a document unlocked by another user
         self.remote_document_client_2.unlock('/Test locking/myDoc.odt')
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(self.touch(user1_file_path))
+        assert self.touch(user1_file_path)
 
     def test_local_readonly_modify(self):
         self.local_root_client_1.make_folder('/', 'Test')
@@ -180,4 +180,4 @@ class TestReadOnly(UnitTestCase):
         self.local_root_client_1.update_content('/Test/Test.txt', 'Another content')
         self.engine_1.start()
         self.wait_sync()
-        self.assertEqual(len(self.engine_1.get_dao().get_errors()), 0)
+        assert not self.engine_1.get_dao().get_errors()

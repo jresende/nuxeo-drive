@@ -102,7 +102,7 @@ class TestLocalMoveFolders(UnitTestCase):
         # Check local files in a2/a1
         assert self.local_client_1.exists('/a2/a1')
         children_1 = [child.name for child in self.local_client_1.get_children_info('/a2/a1')]
-        assert len(children_1) == self.NUMBER_OF_LOCAL_IMAGE_FILE
+        assert len(children_1) == self.NUMBER_OF_LOCAL_IMAGE_FILES
         assert set(children_1) == good
 
         # Check that a1 doesn't exist anymore remotely

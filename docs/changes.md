@@ -18,6 +18,7 @@ Release date: `2017-??-??`
 ### Tests
 - [NXDRIVE-739](https://jira.nuxeo.com/browse/NXDRIVE-739): Refactor tests that use direct call to ndrive.py
 - [NXDRIVE-984](https://jira.nuxeo.com/browse/NXDRIVE-984): Create a script to check any pip installation regressions
+- [NXDRIVE-1021](https://jira.nuxeo.com/browse/NXDRIVE-1021): Review the tests tree and content
 
 #### Minor changes
 - Framework: Clean-up queue_manager.py
@@ -25,7 +26,6 @@ Release date: `2017-??-??`
 - GUI: Fix a SEGFAULT when closing the metadata window
 - GUI: Add envar `USE_OLD_MENU` to force the use of the old menu
 - Jenkins: The beta job now uploads the package to the PyPi server
-- Tests: Big clean-up
 - \[macOS\] Fix the favorite link creation
 - \[Windows\] Packaging: Prevent infinite loop when uninstalling
 - \[Windows\] Packaging: Fix symbolic link creation
