@@ -314,6 +314,7 @@ class UnitTestCase(SimpleUnitTestCase):
         self.build_workspace = os.environ.get('WORKSPACE')
         self.tearedDown = False
 
+        self.tmpdir = None
         if self.build_workspace:
             self.tmpdir = os.path.join(self.build_workspace, 'tmp')
             if not os.path.isdir(self.tmpdir):

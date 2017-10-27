@@ -13,13 +13,14 @@ class MockUrlTestEngine(Engine):
 
     def get_binder(self):
         from nxdrive.manager import ServerBindingSettings
-        return ServerBindingSettings(server_url=self._url,
-                        web_authentication=None,
-                        server_version=None,
-                        username='Administrator',
-                        local_folder='/',
-                        initialized=True,
-                        pwd_update_required=False)
+        return ServerBindingSettings(
+            server_url=self._url,
+            web_authentication=None,
+            server_version=None,
+            username='Administrator',
+            local_folder='/',
+            initialized=True,
+            pwd_update_required=False)
 
 
 class TestDirectEdit(UnitTestCase):
@@ -43,29 +44,29 @@ class TestDirectEdit(UnitTestCase):
         super(TestDirectEdit, self).tearDownApp()
 
     def test_url_resolver(self):
-        self.assertIsNotNone(self.direct_edit._get_engine(self.nuxeo_url, self.user_1))
-        self.assertIsNone(self.direct_edit._get_engine(self.nuxeo_url, u'Administrator'))
+        assert self.direct_edit._get_engine(self.nuxeo_url, self.user_1)
+        assert not self.direct_edit._get_engine(self.nuxeo_url, u'Administrator')
         self.manager_1._engine_types['NXDRIVETESTURL'] = MockUrlTestEngine
         # HTTP EXPLICIT
         self.manager_1._engines['0'] = MockUrlTestEngine('http://localhost:80/nuxeo')
-        self.assertIsNone(self.direct_edit._get_engine("http://localhost:8080/nuxeo", u'Administrator'))
-        self.assertIsNotNone(self.direct_edit._get_engine("http://localhost:80/nuxeo", u'Administrator'))
-        self.assertIsNotNone(self.direct_edit._get_engine("http://localhost/nuxeo/", u'Administrator'))
+        assert not self.direct_edit._get_engine("http://localhost:8080/nuxeo", u'Administrator')
+        assert self.direct_edit._get_engine("http://localhost:80/nuxeo", u'Administrator')
+        assert self.direct_edit._get_engine("http://localhost/nuxeo/", u'Administrator')
         # HTTP IMPLICIT
         self.manager_1._engines['0'] = MockUrlTestEngine('http://localhost/nuxeo')
-        self.assertIsNone(self.direct_edit._get_engine("http://localhost:8080/nuxeo", u'Administrator'))
-        self.assertIsNotNone(self.direct_edit._get_engine("http://localhost:80/nuxeo/", u'Administrator'))
-        self.assertIsNotNone(self.direct_edit._get_engine("http://localhost/nuxeo", u'Administrator'))
+        assert not self.direct_edit._get_engine("http://localhost:8080/nuxeo", u'Administrator')
+        assert self.direct_edit._get_engine("http://localhost:80/nuxeo/", u'Administrator')
+        assert self.direct_edit._get_engine("http://localhost/nuxeo", u'Administrator')
         # HTTPS EXPLICIT
         self.manager_1._engines['0'] = MockUrlTestEngine('https://localhost:443/nuxeo')
-        self.assertIsNone(self.direct_edit._get_engine("http://localhost:8080/nuxeo", u'Administrator'))
-        self.assertIsNotNone(self.direct_edit._get_engine("https://localhost:443/nuxeo", u'Administrator'))
-        self.assertIsNotNone(self.direct_edit._get_engine("https://localhost/nuxeo/", u'Administrator'))
+        assert not self.direct_edit._get_engine("http://localhost:8080/nuxeo", u'Administrator')
+        assert self.direct_edit._get_engine("https://localhost:443/nuxeo", u'Administrator')
+        assert self.direct_edit._get_engine("https://localhost/nuxeo/", u'Administrator')
         # HTTPS IMPLICIT
         self.manager_1._engines['0'] = MockUrlTestEngine('https://localhost/nuxeo')
-        self.assertIsNone(self.direct_edit._get_engine("http://localhost:8080/nuxeo", u'Administrator'))
-        self.assertIsNotNone(self.direct_edit._get_engine("https://localhost:443/nuxeo/", u'Administrator'))
-        self.assertIsNotNone(self.direct_edit._get_engine("https://localhost/nuxeo", u'Administrator'))
+        assert not self.direct_edit._get_engine("http://localhost:8080/nuxeo", u'Administrator')
+        assert self.direct_edit._get_engine("https://localhost:443/nuxeo/", u'Administrator')
+        assert self.direct_edit._get_engine("https://localhost/nuxeo", u'Administrator')
 
     def test_note_edit(self):
         remote_fs_client = self.remote_file_system_client_1
@@ -92,7 +93,7 @@ class TestDirectEdit(UnitTestCase):
         self.remote_document_client_2.lock(doc_id)
         self.direct_edit.directEditLocked.connect(self._test_locked_file_signal)
         self.direct_edit._prepare_edit(self.nuxeo_url, doc_id)
-        self.assertTrue(self._received)
+        assert self._received
 
     def test_self_locked_file(self):
         filename = u'Mode operatoire.txt'
@@ -132,9 +133,9 @@ class TestDirectEdit(UnitTestCase):
         self.direct_edit._manager.open_local_file = open_local_file
         self.direct_edit.edit(self.nuxeo_url, doc_id, filename=filename, user=self.user_1)
         self.wait_sync(timeout=2, fail_if_timeout=False)
-        self.assertTrue(called_open, "Should have called open_local_file")
+        assert called_open
         # Should be able to test lock
-        self.assertTrue(self.remote_document_client_1.is_locked(doc_id))
+        assert self.remote_document_client_1.is_locked(doc_id)
         os.remove(lock_file)
         self.wait_sync(timeout=2, fail_if_timeout=False)
         # Should be unlock
@@ -157,20 +158,20 @@ class TestDirectEdit(UnitTestCase):
             self.direct_edit._prepare_edit(self.nuxeo_url, doc_id)
         else:
             self.direct_edit.handle_url(url)
-        self.assertTrue(self.local.exists(local_path))
+        assert self.local.exists(local_path)
         self.wait_sync(timeout=2, fail_if_timeout=False)
         self.local.delete_final(local_path)
 
         # Update file content
         self.local.update_content(local_path, content)
         self.wait_sync()
-        self.assertEqual(self.remote.get_blob(self.remote.get_info(doc_id)), content)
+        assert self.remote.get_blob(self.remote.get_info(doc_id)) == content
 
         # Update file content twice
         update_content = content + ' updated'
         self.local.update_content(local_path, update_content)
         self.wait_sync()
-        self.assertEqual(self.remote.get_blob(self.remote.get_info(doc_id)), update_content)
+        assert self.remote.get_blob(self.remote.get_info(doc_id)) == update_content
 
     def test_direct_edit_cleanup(self):
         filename = u'Mode op\xe9ratoire.txt'
@@ -183,7 +184,7 @@ class TestDirectEdit(UnitTestCase):
 
         self.manager_1.open_local_file = open_local_file
         self.direct_edit._prepare_edit(self.nuxeo_url, doc_id)
-        self.assertTrue(self.local.exists(local_path))
+        assert self.local.exists(local_path)
         self.wait_sync(timeout=2, fail_if_timeout=False)
         self.direct_edit.stop()
 
@@ -194,14 +195,14 @@ class TestDirectEdit(UnitTestCase):
 
         # Verify the cleanup dont delete document
         self.direct_edit._cleanup()
-        self.assertTrue(self.local.exists(local_path))
+        assert self.local.exists(local_path)
         self.assertNotEquals(self.remote.get_blob(self.remote.get_info(doc_id)), 'Test')
 
         # Verify it reupload it
         self.direct_edit.start()
         self.wait_sync(timeout=2, fail_if_timeout=False)
-        self.assertTrue(self.local.exists(local_path))
-        self.assertEqual(self.remote.get_blob(self.remote.get_info(doc_id)), 'Test')
+        assert self.local.exists(local_path)
+        assert self.remote.get_blob(self.remote.get_info(doc_id)) == 'Test'
 
         # Verify it is cleanup if sync
         self.direct_edit.stop()
@@ -211,14 +212,14 @@ class TestDirectEdit(UnitTestCase):
     def test_user_name(self):
         # user_1 is drive_user_1, no more informations
         user = self.engine_1.get_user_full_name(self.user_1)
-        self.assertEqual(user, self.user_1)
+        assert user == self.user_1
 
         # Create a complete user
         remote = self.root_remote_client
         remote.create_user('john', firstName='John', lastName='Doe')
         user = self.engine_1.get_user_full_name('john')
-        self.assertEqual(user, 'John Doe')
+        assert user == 'John Doe'
 
         # Unknown user
         user = self.engine_1.get_user_full_name('unknown')
-        self.assertEqual(user, 'unknown')
+        assert user == 'unknown'

@@ -14,94 +14,88 @@ class TestEncoding(UnitTestCase):
         super(TestEncoding, self).setUp()
         self.engine_1.start()
         self.wait_sync()
+
         # Bind the server and root workspace
         self.remote_client = self.remote_document_client_1
         self.local_client = self.local_client_1
 
     def test_filename_with_accents_from_server(self):
-        self.remote_client.make_file(self.workspace,
-            u'Nom sans accents.doc',
-            u"Contenu sans accents.")
-        self.remote_client.make_file(self.workspace,
-            u'Nom avec accents \xe9 \xe8.doc',
-            u"Contenu sans accents.")
+        self.remote_client.make_file(
+            self.workspace, u'Nom sans accents.doc',
+            content=u'Contenu sans accents.')
+        self.remote_client.make_file(
+            self.workspace, u'Nom avec accents \xe9 \xe8.doc',
+            content=u'Contenu sans accents.')
 
         self.wait_sync(wait_for_async=True)
+        body = self.local_client.get_content(u'/Nom sans accents.doc')
+        assert body == u'Contenu sans accents.'
 
-        self.assertEqual(self.local_client.get_content(
-            u'/Nom sans accents.doc'),
-            u"Contenu sans accents.")
-        self.assertEqual(self.local_client.get_content(
-            u'/Nom avec accents \xe9 \xe8.doc'),
-            u"Contenu sans accents.")
+        body = self.local_client.get_content(u'/Nom avec accents \xe9 \xe8.doc')
+        assert body == u'Contenu sans accents.'
 
     def test_filename_with_katakana(self):
-        self.remote_client.make_file(self.workspace,
-            u'Nom sans \u30bc\u30ec accents.doc',
-            u"Contenu")
-        self.local_client.make_file('/',
-            u'Avec accents \u30d7 \u793e.doc',
-            u"Contenu")
+        self.remote_client.make_file(
+            self.workspace, u'Nom sans \u30bc\u30ec accents.doc', u'Contenu')
+        self.local_client.make_file(
+            '/', u'Avec accents \u30d7 \u793e.doc', u'Contenu')
 
         self.wait_sync(wait_for_async=True)
+        body = self.local_client.get_content(u'/Nom sans \u30bc\u30ec accents.doc')
+        assert body == u'Contenu'
 
-        self.assertEqual(self.local_client.get_content(
-            u'/Nom sans \u30bc\u30ec accents.doc'),
-            u"Contenu")
-        self.assertEqual(self.remote_client.get_content(
-            u'/Avec accents \u30d7 \u793e.doc'),
-            u"Contenu")
+        body = self.remote_client.get_content(u'/Avec accents \u30d7 \u793e.doc')
+        assert body == u'Contenu'
 
     def test_content_with_accents_from_server(self):
-        self.remote_client.make_file(self.workspace,
-            u'Nom sans accents.txt',
-            u"Contenu avec caract\xe8res accentu\xe9s.".encode('utf-8'))
+        self.remote_client.make_file(
+            self.workspace, u'Nom sans accents.txt',
+            u'Contenu avec caract\xe8res accentu\xe9s.'.encode('utf-8'))
+
         self.wait_sync(wait_for_async=True)
-        self.assertEqual(self.local_client.get_content(
-            u'/Nom sans accents.txt'),
-            u"Contenu avec caract\xe8res accentu\xe9s.".encode('utf-8'))
+        body = self.local_client.get_content(u'/Nom sans accents.txt')
+        good = u'Contenu avec caract\xe8res accentu\xe9s.'.encode('utf-8')
+        assert body == good
 
     def test_filename_with_accents_from_client(self):
-        self.local_client.make_file('/',
-            u'Avec accents \xe9 \xe8.doc',
-            u"Contenu sans accents.")
-        self.local_client.make_file('/',
-            u'Sans accents.doc',
-            u"Contenu sans accents.")
+        self.local_client.make_file(
+            '/', u'Avec accents \xe9 \xe8.doc', u'Contenu sans accents.')
+        self.local_client.make_file(
+            '/', u'Sans accents.doc', u'Contenu sans accents.')
+
         self.wait_sync(wait_for_async=True)
-        self.assertEqual(self.remote_client.get_content(
-            u'/Avec accents \xe9 \xe8.doc'),
-            u"Contenu sans accents.")
-        self.assertEqual(self.remote_client.get_content(
-            u'/Sans accents.doc'),
-            u"Contenu sans accents.")
+        body = self.remote_client.get_content(u'/Avec accents \xe9 \xe8.doc')
+        assert body == u'Contenu sans accents.'
+
+        body = self.remote_client.get_content(u'/Sans accents.doc')
+        assert body == u'Contenu sans accents.'
 
     def test_content_with_accents_from_client(self):
-        self.local_client.make_file('/',
-            u'Nom sans accents',
-            u"Contenu avec caract\xe8res accentu\xe9s.".encode('utf-8'))
+        self.local_client.make_file(
+            '/', u'Nom sans accents',
+            u'Contenu avec caract\xe8res accentu\xe9s.'.encode('utf-8'))
+
         self.wait_sync(wait_for_async=True)
-        self.assertEqual(self.remote_client.get_content(
-            u'/Nom sans accents'),
-            u"Contenu avec caract\xe8res accentu\xe9s.".encode('utf-8'))
+        body = self.remote_client.get_content(u'/Nom sans accents')
+        good = u'Contenu avec caract\xe8res accentu\xe9s.'.encode('utf-8')
+        assert body == good
 
     def test_name_normalization(self):
-        self.local_client.make_file('/',
-            u'espace\xa0 et TM\u2122.doc')
+        self.local_client.make_file('/', u'espace\xa0 et TM\u2122.doc')
         self.wait_sync(wait_for_async=True)
-        self.assertEqual(self.remote_client.get_info(
-            u'/espace\xa0 et TM\u2122.doc').name,
-            u'espace\xa0 et TM\u2122.doc')
+        doc = self.remote_client.get_info(u'/espace\xa0 et TM\u2122.doc')
+        assert doc.name == u'espace\xa0 et TM\u2122.doc'
 
     @pytest.mark.skipif(
         sys.platform == 'darwin',
-        reason='Normalization do not work on macOS.')
+        reason='Normalization does not work on macOS.')
     def test_fileinfo_normalization(self):
         self.engine_1.stop()
         name = u'Teste\u0301'
         self.local_client.make_file('/', name, 'Test')
-        info = FileInfo(self.local_client.base_folder, '/' + name, False, 0)
-        # The encoding should be different - cannot trust the get_children as they use FileInfo
+        FileInfo(self.local_client.base_folder, '/' + name, False, 0)
+        # The encoding should be different - cannot trust the get_children
+        # as they use FileInfo
         children = os.listdir(self.local_client.abspath('/'))
         children.sort()
-        self.assertNotEqual(children[0], name)
+        assert children[0] != name

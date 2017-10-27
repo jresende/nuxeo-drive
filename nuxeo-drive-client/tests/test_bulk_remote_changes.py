@@ -105,13 +105,13 @@ class TestBulkRemoteChanges(UnitTestCase):
 
         self.wait_sync(wait_for_async=True)
 
-        self.assertTrue(local_client.exists('/folder1'), "'/folder1' should sync")
-        self.assertTrue(local_client.exists('/folder2'), "'/folder1' should sync")
-        self.assertTrue(local_client.exists('/shared'), "'/shared' folder should sync")
-        self.assertTrue(local_client.exists('/folder1/file1.txt'), "'/folder1/file1.txt' should sync")
-        self.assertTrue(local_client.exists('/folder2/file2.txt'), "'/folder2/file2.txt' should sync")
-        self.assertTrue(local_client.exists('/shared/readme1.txt'), "'/shared/readme1.txt' should sync")
-        self.assertTrue(local_client.exists('/shared/readme2.txt'), "'/shared/readme2.txt' should sync")
+        assert local_client.exists('/folder1')
+        assert local_client.exists('/folder2')
+        assert local_client.exists('/shared')
+        assert local_client.exists('/folder1/file1.txt')
+        assert local_client.exists('/folder2/file2.txt')
+        assert local_client.exists('/shared/readme1.txt')
+        assert local_client.exists('/shared/readme2.txt')
 
         # Simulate network error for GetChildren API twice
         # This is to ensure drive will eventually recover even after multiple failures of GetChildren API
@@ -130,12 +130,11 @@ class TestBulkRemoteChanges(UnitTestCase):
         remote_client.make_file(folder2, "sample2.txt", "This is a another sample file2")
 
         self.wait_sync(wait_for_async=True)
-
-        self.assertTrue(local_client.exists('/folder2/sample2.txt'), "'/folder2/sample2.txt' should sync")
-        self.assertTrue(local_client.exists('/folder1/sample1.txt'), "'/folder1/sample1.txt' should sync")
+        assert local_client.exists('/folder2/sample2.txt')
+        assert local_client.exists('/folder1/sample1.txt')
 
         # Although sync failed for one folder, GetChangeSummary will return zero event in successive calls
         # We need to wait two remote scans, so sleep for TEST_DEFAULT_DELAY * 2
         sleep(TEST_DEFAULT_DELAY * 2)
-        self.assertTrue(local_client.exists('/shared/readme1.txt'), "'/shared/readme1.txt' should sync")
-        self.assertTrue(local_client.exists('/shared/readme3.txt'), "'/shared/readme3.txt' should sync")
+        assert local_client.exists('/shared/readme1.txt')
+        assert local_client.exists('/shared/readme3.txt')

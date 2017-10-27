@@ -1,4 +1,9 @@
 # coding: utf-8
+"""
+Define envar 0 < TEST_REMOTE_SCAN_VOLUME
+Define envar TEST_VOLUME to "nb_folders, nb_files, depth"
+"""
+
 import os
 import shutil
 from copy import copy
@@ -10,6 +15,9 @@ import pytest
 from common_unit_test import UnitTestCase
 from nxdrive.logging_config import get_logger
 from tests.common import TEST_WORKSPACE_PATH
+
+if not os.environ.get('TEST_REMOTE_SCAN_VOLUME'):
+    pytestmark = pytest.mark.skip('TEST_REMOTE_SCAN_VOLUME envar is not set.')
 
 log = get_logger(__name__)
 
@@ -46,9 +54,6 @@ class VolumeTestCase(UnitTestCase):
                     self.generate_random_png(file_path)
                 self.items = self.items + 1
 
-    @pytest.mark.skipif(
-        'TEST_VOLUME' not in os.environ,
-        reason='TEST_VOLUME envar is not set.')
     def create(self, stopped=True, wait_for_sync=True):
         self.fake = False
         if not self.fake:
@@ -57,12 +62,12 @@ class VolumeTestCase(UnitTestCase):
             if not stopped:
                 self.engine_1.stop()
         self.items = 0
-        values = os.environ["TEST_VOLUME"].split(",")
+        values = os.environ.get('TEST_VOLUME', '3, 10, 2').split(',')
         if values is None or len(values) < 3:
             # Low volume by default to stick to 1h
             values = "3, 10, 2".split(",")
         self.fmt = ["", "", ""]
-        for i in range(0,3):
+        for i in range(0, 3):
             self.fmt[i] = "%0" + str(self.pow10floor(values[i])) + "d"
         self.depth = int(values[2])
         self.num_files = int(values[1])
@@ -254,9 +259,6 @@ class VolumeTestCase(UnitTestCase):
         self._check_folder(self.get_path(True, 1, self.num_folders+1), added=[self.get_name(True, 1, 1)])
         self._check_folder(self.get_path(True, 1, self.num_folders+2), added=[self.get_name(True, 1, 1)])
 
-    @pytest.mark.skipif(
-        int(os.environ.get('TEST_REMOTE_SCAN_VOLUME', 0)) == 0,
-        reason='TEST_VOLUME envar is not set or null.')
     def test_remote_scan(self):
         nb_nodes = int(os.environ["TEST_REMOTE_SCAN_VOLUME"])
         # Random mass import

@@ -53,14 +53,13 @@ class TestLocalCreations(UnitTestCase):
 
         # Get remote folders reference IDs
         remote_ref_1 = local.get_remote_id('/' + folder_path_1)
-        self.assertIsNotNone(remote_ref_1)
-        self.assertTrue(remote.exists(remote_ref_1))
+        assert remote_ref_1
+        assert remote.exists(remote_ref_1)
         remote_ref_2 = local.get_remote_id('/' + folder_path_2)
-        self.assertIsNotNone(remote_ref_2)
-        self.assertTrue(remote.exists(remote_ref_2))
+        assert remote_ref_2
+        assert remote.exists(remote_ref_2)
 
-        self.assertEqual(len(remote.get_children_info(remote_ref_1)),
-                         total_files)
+        assert len(remote.get_children_info(remote_ref_1)) == total_files
 
     @pytest.mark.timeout(40)
     def test_local_create_folders_upper_lower_cases(self):
@@ -83,8 +82,8 @@ class TestLocalCreations(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Check
-        self.assertTrue(remote.exists('/' + folder))
-        self.assertTrue(local.exists('/' + folder))
+        assert remote.exists('/' + folder)
+        assert local.exists('/' + folder)
 
         # Locally rename to upper case.  A possible infinite loop can occur.
         folder_upper = folder.upper()
@@ -93,11 +92,11 @@ class TestLocalCreations(UnitTestCase):
 
         # Checks
         children = remote.get_children_info(self.workspace_1)
-        self.assertEqual(len(children), 1)
-        self.assertEqual(children[0].name, folder_upper)
+        assert len(children) == 1
+        assert children[0].name == folder_upper
         children = local.get_children_info('/')
-        self.assertEqual(len(children), 1)
-        self.assertEqual(children[0].name, folder_upper)
+        assert len(children) == 1
+        assert children[0].name == folder_upper
 
     @pytest.mark.timeout(40)
     def test_local_create_files_upper_lower_cases(self):
@@ -120,8 +119,8 @@ class TestLocalCreations(UnitTestCase):
         self.wait_sync(wait_for_async=True)
 
         # Check
-        self.assertTrue(remote.exists('/' + filename))
-        self.assertTrue(local.exists('/' + filename))
+        assert remote.exists('/' + filename)
+        assert local.exists('/' + filename)
 
         # Locally rename to upper case.  A possible infinite loop can occur.
         filename_upper = filename.upper()
@@ -130,8 +129,8 @@ class TestLocalCreations(UnitTestCase):
 
         # Checks
         children = remote.get_children_info(self.workspace_1)
-        self.assertEqual(len(children), 1)
-        self.assertEqual(children[0].name, filename_upper)
+        assert len(children) == 1
+        assert children[0].name == filename_upper
         children = local.get_children_info('/')
-        self.assertEqual(len(children), 1)
-        self.assertEqual(children[0].name, filename_upper)
+        assert len(children) == 1
+        assert children[0].name == filename_upper

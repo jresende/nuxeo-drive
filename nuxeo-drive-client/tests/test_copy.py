@@ -16,18 +16,16 @@ class TestCopy(UnitTestCase):
         # Launch ndrive and check synchronization
         self.engine_1.start()
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/'))
-        self.assertTrue(local.exists('/Test folder'))
-        self.assertTrue(local.exists('/test.odt'))
+        assert local.exists('/')
+        assert local.exists('/Test folder')
+        assert local.exists('/test.odt')
 
         # Copy the file to the folder remotely
         remote.copy('/test.odt', '/Test folder')
 
         # Launch ndrive and check synchronization
         self.wait_sync(wait_for_async=True)
-        self.assertTrue(local.exists('/test.odt'))
-        self.assertEqual(local.get_content('/test.odt'),
-                        'Some content.')
-        self.assertTrue(local.exists('/Test folder/test.odt'))
-        self.assertEqual(local.get_content('/Test folder/test.odt'),
-                         'Some content.')
+        assert local.exists('/test.odt')
+        assert local.get_content('/test.odt') == 'Some content.'
+        assert local.exists('/Test folder/test.odt')
+        assert local.get_content('/Test folder/test.odt') == 'Some content.'

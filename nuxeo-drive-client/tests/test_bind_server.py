@@ -1,15 +1,16 @@
 # coding: utf-8
 import os
 import tempfile
-import unittest
+from unittest import TestCase
 
+import pytest
 from mock import Mock
 
 from nxdrive.manager import FolderAlreadyUsed, Manager
 from tests.common import TEST_DEFAULT_DELAY, clean_dir
 
 
-class BindServerTest(unittest.TestCase):
+class BindServerTest(TestCase):
     def setUp(self):
         self.build_workspace = os.environ.get('WORKSPACE')
         self.tmp_dir = None
@@ -42,7 +43,7 @@ class BindServerTest(unittest.TestCase):
         options.nxdrive_home = self.nxdrive_conf_folder
         self.manager = Manager(options)
 
-        with self.assertRaises(FolderAlreadyUsed):
+        with pytest.raises(FolderAlreadyUsed):
             self.manager.bind_server(
                 self.nxdrive_conf_folder, self.nuxeo_url,
-                    self.user, self.password, start_engine=False)
+                self.user, self.password, start_engine=False)
