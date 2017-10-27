@@ -1,9 +1,10 @@
 # coding: utf-8
 import os
 import shutil
-from unittest import skip
+import sys
 
-from nxdrive.osi import AbstractOSIntegration
+import pytest
+
 from tests.common_unit_test import UnitTestCase
 
 
@@ -45,7 +46,7 @@ class TestLocalDeletion(UnitTestCase):
         self.assertFalse(self.local_client_1.exists('/File_To_Delete.txt'))
         with open(os.path.join(self.local_test_folder_1, 'File_To_Delete2.txt'), 'w') as f:
             f.write('New content')
-        if AbstractOSIntegration.is_windows():
+        if sys.platform == 'win32':
             # Python API overwrite the tag by default
             with open(os.path.join(self.local_test_folder_1, 'File_To_Delete2.txt:ndrive'), 'w') as f:
                 f.write(uid)
@@ -117,7 +118,8 @@ class TestLocalDeletion(UnitTestCase):
         self.assertIsNotNone(new_uid)
         self.assertFalse(new_uid.endswith(old_info.uid))
 
-    @skip('Wait to know what is the expectation - the previous folder doesnt exist')
+    @pytest.mark.skip(reason='Wait to know what is the expectation,'
+                             ' the previous folder does not exist.')
     def test_move_untrash_file_on_parent_with_no_rights_on_destination(self):
         # Setup the test
         file_path = '/ToDelete/File_To_Delete.txt'

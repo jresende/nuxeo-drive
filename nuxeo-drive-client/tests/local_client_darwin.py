@@ -3,14 +3,11 @@
 Intent of this file is to use OSX File Manager to make FS operations to simulate
 user actions.
 """
-
 import os
-import sys
+
+import Cocoa
 
 from nxdrive.client.local_client import LocalClient
-
-if sys.platform == 'darwin':
-    import Cocoa
 
 
 class MacLocalClient(LocalClient):

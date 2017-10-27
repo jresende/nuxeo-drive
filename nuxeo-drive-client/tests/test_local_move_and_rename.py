@@ -1,7 +1,9 @@
 # coding: utf-8
+import sys
 import urllib2
 from time import sleep
-from unittest import skip
+
+import pytest
 
 from nxdrive.client import LocalClient
 from nxdrive.client.remote_filtered_file_system_client import \
@@ -54,15 +56,19 @@ class TestLocalMoveAndRename(UnitTestCase):
         self.wait_sync(timeout=30)
 
     def get_local_client(self, path):
-        if AbstractOSIntegration.is_mac() and (
-                    self._testMethodName == 'test_local_delete_readonly_folder' or
-                    self._testMethodName == 'test_local_rename_readonly_folder'):
-            return LocalClient(path)
-        # Old mac dont handle case rename
-        if AbstractOSIntegration.is_mac() and AbstractOSIntegration.os_version_below("10.10") and (
-                    self._testMethodName == 'test_local_rename_file_uppercase_stopped' or
-                    self._testMethodName == 'test_local_rename_file_uppercase'):
-            return LocalClient(path)
+        if sys.platform == 'darwin':
+            tests = ('test_local_delete_readonly_folder',
+                     'test_local_rename_readonly_folder')
+            if self._testMethodName in tests:
+                return LocalClient(path)
+
+            # Old mac don't handle case rename
+            tests = ('test_local_rename_file_uppercase_stopped',
+                     'test_local_rename_file_uppercase')
+            if (AbstractOSIntegration.os_version_below('10.10')
+                    and self._testMethodName in tests):
+                return LocalClient(path)
+
         return super(TestLocalMoveAndRename, self).get_local_client(path)
 
     def test_local_rename_folder_while_creating(self):
@@ -762,7 +768,7 @@ class TestLocalMoveAndRename(UnitTestCase):
         folder_1_2_remote_info = remote_client.get_info(u'/Original Folder 1/Sub-Folder 1.2')
         self.assertEqual(folder_1_2_remote_info.name, u'Sub-Folder 1.2')
 
-        if not AbstractOSIntegration.is_windows():
+        if sys.platform != 'win32':
             # Check filter has been created
             self.assertTrue(
                 self.engine_1.get_dao().is_filter(
@@ -771,7 +777,7 @@ class TestLocalMoveAndRename(UnitTestCase):
             # Check local folder haven't been re-created
             self.assertFalse(local_client.exists(u'/Original Folder 1'))
 
-    @skip('Need expectation on this test')
+    @pytest.mark.skip(reason='Need expectation on this one.')
     def test_local_move_folder_to_readonly(self):
         local_client = self.local_client_1
         remote_client = self.remote_document_client_1

@@ -1,12 +1,14 @@
 # coding: utf-8
-from unittest import skipIf
+import sys
 
-from nxdrive.osi import AbstractOSIntegration
+import pytest
+
 from tests.common_unit_test import UnitTestCase
 
+if sys.platform != 'darwin':
+    pytestmark = pytest.mark.skip('macOS only.')
 
-@skipIf(not AbstractOSIntegration.is_mac(),
-        'Not relevant on GNU/Linux nor Windows')
+
 class TestMacSpecific(UnitTestCase):
 
     def test_finder_in_use(self):
@@ -14,8 +16,8 @@ class TestMacSpecific(UnitTestCase):
 
         self.engine_1.start()
         self.wait_sync(wait_for_async=True)
-        self.local_client_1.make_file('/', u'File.txt',
-                                      content=u'Some Content 1'.encode('utf-8'))
+        self.local_client_1.make_file(
+            '/', u'File.txt', content=u'Some Content 1'.encode('utf-8'))
 
         # Emulate the Finder in use flag
         OSX_FINDER_INFO_ENTRY_SIZE = 32

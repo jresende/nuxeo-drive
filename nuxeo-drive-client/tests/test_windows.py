@@ -3,17 +3,20 @@ import os
 import shutil
 import sys
 import time
-import unittest
+
+import pytest
 
 from nxdrive.client import LocalClient
 from tests.common import OS_STAT_MTIME_RESOLUTION, \
     REMOTE_MODIFICATION_TIME_RESOLUTION
-from tests.common_unit_test import RandomBug, UnitTestCase
+from tests.common_unit_test import UnitTestCase
+
+if sys.platform != 'win32':
+    pytestmark = pytest.mark.skip('Windows only.')
 
 
 class TestWindows(UnitTestCase):
 
-    @RandomBug('NXDRIVE-719', target='linux', mode='BYPASS')
     def test_local_replace(self):
         local = LocalClient(self.local_test_folder_1)
         remote = self.remote_document_client_1
@@ -92,61 +95,53 @@ class TestWindows(UnitTestCase):
 
         # Synchronize
         self.wait_sync(wait_for_async=True, enforce_errors=False, fail_if_timeout=False)
-        if sys.platform == 'win32':
-            # As local file are locked, a WindowsError should occur during the
-            # local update process, therefore:
-            # - Temporary download file (.part) should be created locally but
-            #   not renamed then removed
-            # - Opened local files should still exist and not have been
-            #   modified
-            # - Synchronization should not fail: doc pairs should be
-            #   blacklisted and other remote modifications should be locally synchronized
-            self.assertNxPart('/', name='test_update.docx', present=False)
-            self.assertTrue(local.exists('/test_update.docx'))
-            self.assertEqual(local.get_content('/test_update.docx'),
-                             'Some content to update.')
-            self.assertTrue(local.exists('/test_delete.docx'))
-            self.assertEqual(local.get_content('/test_delete.docx'),
-                             'Some content to delete.')
-            self.assertTrue(local.exists('/other.docx'))
-            self.assertEqual(local.get_content('/other.docx'),
-                             'Other content.')
+        # As local file are locked, a WindowsError should occur during the
+        # local update process, therefore:
+        # - Temporary download file (.part) should be created locally but
+        #   not renamed then removed
+        # - Opened local files should still exist and not have been
+        #   modified
+        # - Synchronization should not fail: doc pairs should be
+        #   blacklisted and other remote modifications should be locally synchronized
+        self.assertNxPart('/', name='test_update.docx', present=False)
+        self.assertTrue(local.exists('/test_update.docx'))
+        self.assertEqual(local.get_content('/test_update.docx'),
+                         'Some content to update.')
+        self.assertTrue(local.exists('/test_delete.docx'))
+        self.assertEqual(local.get_content('/test_delete.docx'),
+                         'Some content to delete.')
+        self.assertTrue(local.exists('/other.docx'))
+        self.assertEqual(local.get_content('/other.docx'),
+                         'Other content.')
 
-            # Synchronize again
-            self.wait_sync(enforce_errors=False, fail_if_timeout=False)
-            # Blacklisted files should be ignored as delay (60 seconds by
-            # default) is not expired, nothing should have changed
-            self.assertNxPart('/', name='test_update.docx', present=False)
-            self.assertTrue(local.exists('/test_update.docx'))
-            self.assertEqual(local.get_content('/test_update.docx'),
-                             'Some content to update.')
-            self.assertTrue(local.exists('/test_delete.docx'))
-            self.assertEqual(local.get_content('/test_delete.docx'),
-                             'Some content to delete.')
+        # Synchronize again
+        self.wait_sync(enforce_errors=False, fail_if_timeout=False)
+        # Blacklisted files should be ignored as delay (60 seconds by
+        # default) is not expired, nothing should have changed
+        self.assertNxPart('/', name='test_update.docx', present=False)
+        self.assertTrue(local.exists('/test_update.docx'))
+        self.assertEqual(local.get_content('/test_update.docx'),
+                         'Some content to update.')
+        self.assertTrue(local.exists('/test_delete.docx'))
+        self.assertEqual(local.get_content('/test_delete.docx'),
+                         'Some content to delete.')
 
-            # Release file locks by closing them
-            file1_desc.close()
-            file2_desc.close()
-            # Cancel error delay to force retrying synchronization of pairs in error
-            self.queue_manager_1.requeue_errors()
-            self.wait_sync()
+        # Release file locks by closing them
+        file1_desc.close()
+        file2_desc.close()
+        # Cancel error delay to force retrying synchronization of pairs in error
+        self.queue_manager_1.requeue_errors()
+        self.wait_sync()
 
-            # Previously blacklisted files should be updated / deleted locally,
-            # temporary download file should not be there anymore and there
-            # should be no pending items left
-            self.assertTrue(local.exists('/test_update.docx'))
-            self.assertEqual(local.get_content('/test_update.docx'),
-                             'Updated content.')
-            self.assertNxPart('/', name='test_update.docx', present=False)
-            self.assertFalse(local.exists('/test_delete.docx'))
-        else:
-            self.assertTrue(local.exists('/test_update.docx'))
-            self.assertEqual(local.get_content('/test_update.docx'),
-                             'Updated content.')
-            self.assertNxPart('/', name='test_update.docx', present=False)
-            self.assertFalse(local.exists('/test_delete.docx'))
+        # Previously blacklisted files should be updated / deleted locally,
+        # temporary download file should not be there anymore and there
+        # should be no pending items left
+        self.assertTrue(local.exists('/test_update.docx'))
+        self.assertEqual(local.get_content('/test_update.docx'),
+                         'Updated content.')
+        self.assertNxPart('/', name='test_update.docx', present=False)
+        self.assertFalse(local.exists('/test_delete.docx'))
 
-    @unittest.skipUnless(sys.platform == 'win32', 'Windows only.')
     def test_registry_configuration(self):
         """ Test the configuration stored in the registry. """
 

@@ -3,7 +3,9 @@ import os
 import shutil
 from copy import copy
 from math import floor, log10
-from unittest import SkipTest, skipIf
+from unittest import SkipTest
+
+import pytest
 
 from common_unit_test import UnitTestCase
 from nxdrive.logging_config import get_logger
@@ -44,8 +46,9 @@ class VolumeTestCase(UnitTestCase):
                     self.generate_random_png(file_path)
                 self.items = self.items + 1
 
-    @skipIf('TEST_VOLUME' not in os.environ,
-            'Deactivate if not launch on purpose with TEST_VOLUME set')
+    @pytest.mark.skipif(
+        'TEST_VOLUME' not in os.environ,
+        reason='TEST_VOLUME envar is not set.')
     def create(self, stopped=True, wait_for_sync=True):
         self.fake = False
         if not self.fake:
@@ -251,9 +254,9 @@ class VolumeTestCase(UnitTestCase):
         self._check_folder(self.get_path(True, 1, self.num_folders+1), added=[self.get_name(True, 1, 1)])
         self._check_folder(self.get_path(True, 1, self.num_folders+2), added=[self.get_name(True, 1, 1)])
 
-    @skipIf('TEST_REMOTE_SCAN_VOLUME' not in os.environ
-            or int(os.environ['TEST_REMOTE_SCAN_VOLUME']) == 0,
-            'Skipped as TEST_REMOTE_SCAN_VOLUME is no set')
+    @pytest.mark.skipif(
+        int(os.environ.get('TEST_REMOTE_SCAN_VOLUME', 0)) == 0,
+        reason='TEST_VOLUME envar is not set or null.')
     def test_remote_scan(self):
         nb_nodes = int(os.environ["TEST_REMOTE_SCAN_VOLUME"])
         # Random mass import

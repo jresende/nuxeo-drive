@@ -1,5 +1,4 @@
 # coding: utf-8
-
 import os
 from shutil import copyfile
 from time import sleep

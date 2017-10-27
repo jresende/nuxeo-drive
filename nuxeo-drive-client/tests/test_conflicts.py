@@ -1,7 +1,8 @@
 # coding: utf-8
 import shutil
 import time
-from unittest import SkipTest, skip
+
+import pytest
 
 from tests.common import OS_STAT_MTIME_RESOLUTION
 from tests.common_unit_test import RandomBug, UnitTestCase
@@ -97,19 +98,6 @@ class TestConflicts(UnitTestCase):
         self.wait_sync(wait_for_async=True)
         self.assertEqual(self.local_client_1.get_content('/test.txt'), 'Remote update 2')
 
-    def test_resolve_duplicate(self):
-        if not self.local_client_1.duplication_enabled():
-            raise SkipTest('De-duplication disabled.')
-
-        self.test_real_conflict()
-        # Resolve to local file
-        pair = self.engine_1.get_dao().get_normal_state_from_remote(self.file_id)
-        self.assertIsNotNone(pair)
-        self.engine_1.resolve_with_duplicate(pair.id)
-        self.wait_sync(wait_for_async=True)
-        self.assertEqual(self.local_client_1.get_content('/test.txt'), 'Remote update 2')
-        self.assertEqual(self.local_client_1.get_content('/test__1.txt'), 'Local update 2')
-
     def test_conflict_on_lock(self):
         doc_uid = self.file_id.split("#")[-1]
         local = self.local_client_1
@@ -130,17 +118,17 @@ class TestConflicts(UnitTestCase):
         self.assertEqual(remote.get_content(self.file_id), 'Remote update')
         self.assertEqual(self.engine_1.get_dao().get_normal_state_from_remote(self.file_id).pair_state, "conflicted")
 
-    # @skipIf(not AbstractOSIntegration.is_windows(),
-    #        'Windows Office only test')
-    @skip(('NXDRIVE-776: Random bug but we cannot use RandomBug because this'
-           'test would take ~30 minutes to complete.'))
+    # @pytest.mark.skipif(sys.platform != 'win32', reason='Windows only.')
+    @pytest.mark.skip(reason='NXDRIVE-776: Random bug but we cannot use '
+                             'RandomBug because this would take ~30 minutes'
+                             ' to complete.')
     def test_XLS_conflict_on_locked_document(self):
         self._XLS_local_update_on_locked_document(locked_from_start=False)
 
-    # @skipIf(not AbstractOSIntegration.is_windows(),
-    #        'Windows Office only test')
-    @skip(('NXDRIVE-776: Random bug but we cannot use RandomBug because this'
-           'test would take ~30 minutes to complete.'))
+    # @pytest.mark.skipif(sys.platform != 'win32', reason='Windows only.')
+    @pytest.mark.skip(reason='NXDRIVE-776: Random bug but we cannot use '
+                             'RandomBug because this would take ~30 minutes'
+                             ' to complete.')
     def test_XLS_conflict_on_locked_document_from_start(self):
         self._XLS_local_update_on_locked_document()
 

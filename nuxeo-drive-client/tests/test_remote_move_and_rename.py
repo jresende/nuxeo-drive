@@ -3,8 +3,8 @@ import os
 import sys
 import time
 from shutil import copyfile
-from unittest import skipIf
 
+import pytest
 from mock import Mock, patch
 
 from nxdrive.client import LocalClient
@@ -110,7 +110,7 @@ class TestRemoteMoveAndRename(UnitTestCase):
         self.assertTrue(local.exists('/Test folder renamed/testFile.pdf'))
         self.assertTrue(local.exists('/Test folder renamed/testFile2.pdf'))
 
-    @skipIf(sys.platform != 'win32', 'Only make sense on Windows')
+    @pytest.mark.skipif(sys.platform != 'win32', reason='Windows only.')
     def test_synchronize_remote_rename_file_while_accessing(self):
         local = self.local_client_1
         remote = self.remote_file_system_client_1
@@ -147,7 +147,7 @@ class TestRemoteMoveAndRename(UnitTestCase):
         self.assertTrue(local.exists('/Test folder/testFile2.pdf'))
         self.assertFalse(local.exists('/Test folder/testFile.pdf'))
 
-    @skipIf(sys.platform != 'win32', 'Only make sense on Windows')
+    @pytest.mark.skipif(sys.platform != 'win32', reason='Windows only.')
     def test_synchronize_remote_move_file_while_accessing(self):
         # Get local and remote clients
         local = self.local_client_1

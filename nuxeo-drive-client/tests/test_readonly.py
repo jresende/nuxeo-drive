@@ -1,10 +1,11 @@
 # coding: utf-8
 import os
+import sys
 import time
-from unittest import skipIf
+
+import pytest
 
 from nxdrive.logging_config import get_logger
-from nxdrive.osi import AbstractOSIntegration
 from tests.common import OS_STAT_MTIME_RESOLUTION, TEST_WORKSPACE_PATH
 from tests.common_unit_test import RandomBug, UnitTestCase
 
@@ -79,8 +80,9 @@ class TestReadOnly(UnitTestCase):
             return False
         return True
 
-    @skipIf(AbstractOSIntegration.is_windows(),
-            'Readonly folder let new file creation')
+    @pytest.mark.skipif(
+        sys.platform == 'win32',
+        reason='Windows does not take into account read-only protection.')
     def test_readonly_user_access(self):
         # Should not be able to create content in root folder
         fname = os.path.join(self.local_nxdrive_folder_1, 'test.txt')
@@ -92,8 +94,9 @@ class TestReadOnly(UnitTestCase):
         fname = os.path.join(self.sync_root_folder_1, 'Test folder', 'Sub folder 1', 'test.txt')
         self.assertFalse(self.touch(fname), "Should be able to create in SYNCROOT folder")
 
-    @skipIf(AbstractOSIntegration.is_windows(),
-            'Readonly folder let new file creation')
+    @pytest.mark.skipif(
+        sys.platform == 'win32',
+        reason='Windows does not take into account read-only protection.')
     @RandomBug('NXDRIVE-816', target='mac', mode='BYPASS')
     def test_file_readonly_change(self):
         local = self.local_client_1
@@ -178,4 +181,3 @@ class TestReadOnly(UnitTestCase):
         self.engine_1.start()
         self.wait_sync()
         self.assertEqual(len(self.engine_1.get_dao().get_errors()), 0)
-

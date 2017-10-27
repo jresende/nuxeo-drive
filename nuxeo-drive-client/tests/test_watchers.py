@@ -1,11 +1,11 @@
 # coding: utf-8
 import sys
 from shutil import copyfile
-from unittest import skipIf
+
+import pytest
 
 from nxdrive.client import LocalClient
 from nxdrive.logging_config import get_logger
-from nxdrive.osi import AbstractOSIntegration
 from tests.common_unit_test import RandomBug, UnitTestCase
 
 log = get_logger(__name__)
@@ -233,8 +233,9 @@ class TestWatchers(UnitTestCase):
         self.assertFalse(remote.exists(u'/Accentue\u0301.odt'))
         self.assertFalse(remote.exists(u'/P\xf4le applicatif/e\u0302tre ou ne pas \xeatre.odt'))
 
-    @skipIf(AbstractOSIntegration.is_windows(),
-            'Windows cannot have file ending with a space.')
+    @pytest.mark.skipif(
+        sys.platform == 'win32',
+        reason='Windows cannot have file ending with a space.')
     def test_watchdog_space_remover(self):
         """
         Test files and folders ending with space.

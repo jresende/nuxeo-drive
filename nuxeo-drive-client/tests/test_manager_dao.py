@@ -3,6 +3,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+
 from mock import Mock
 
 import nxdrive

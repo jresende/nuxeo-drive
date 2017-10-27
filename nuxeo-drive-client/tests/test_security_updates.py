@@ -1,6 +1,7 @@
 # coding: utf-8
 import time
-from unittest import skip
+
+import pytest
 
 from tests.common import OS_STAT_MTIME_RESOLUTION, TEST_WORKSPACE_PATH
 from tests.common_unit_test import RandomBug, UnitTestCase
@@ -74,7 +75,7 @@ class TestSecurityUpdates(UnitTestCase):
         self.assertTrue(local.exists('/Test folder'))
         self.assertTrue(local.exists('/Test folder/joe.txt'))
 
-    @skip('NXDRIVE-170: WIP')
+    @pytest.mark.skip(reason='NXDRIVE-170: WIP')
     def test_synchronize_denying_read_access_local_modification(self):
         # TO_REVIEW: Trash feature, delete it, might need to modify the behavior
         """Test denying Read access with concurrent local modification

@@ -296,10 +296,10 @@ class UnitTestCase(SimpleUnitTestCase):
 
     def get_local_client(self, path):
         if AbstractOSIntegration.is_windows():
-            from tests.win_local_client import WindowsLocalClient
+            from tests.local_client_win32 import WindowsLocalClient
             return WindowsLocalClient(path)
         if AbstractOSIntegration.is_mac():
-            from tests.mac_local_client import MacLocalClient
+            from tests.local_client_darwin import MacLocalClient
             return MacLocalClient(path)
         return LocalClient(path)
 

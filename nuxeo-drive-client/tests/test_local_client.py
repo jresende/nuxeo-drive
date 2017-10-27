@@ -1,14 +1,14 @@
 # coding: utf-8
 """
 Test LocalClient with native FS operations and specific OS ones.
-See win_local_client.py and mac_local_client.py for more informations.
+See local_client_win32.py and local_client_darwin.py for more informations.
 
 See NXDRIVE-742.
 """
 
 import hashlib
 import os
-import unittest
+import sys
 from time import sleep
 
 import pytest
@@ -16,12 +16,13 @@ import pytest
 from nxdrive.client import LocalClient, NotFound
 from nxdrive.client.common import DuplicationDisabledError
 from nxdrive.logging_config import get_logger
-from nxdrive.osi import AbstractOSIntegration
 from tests.common import EMPTY_DIGEST, SOME_TEXT_CONTENT, SOME_TEXT_DIGEST
 from tests.common_unit_test import UnitTestCase
 
-if AbstractOSIntegration.is_windows():
+try:
     import win32api
+except ImportError:
+    pass
 
 
 log = get_logger(__name__)
@@ -142,7 +143,7 @@ class StubLocalClient(object):
                 local.make_file('/', 'ABC.txt')
         self.assertEqual(len(local.get_children_info('/')), sensitive + 1)
 
-    @unittest.skipUnless(AbstractOSIntegration.is_windows(), 'Windows only.')
+    @pytest.mark.skipif(sys.platform != 'win32', reason='Windows only.')
     def test_windows_short_names(self):
         """
         Test 8.3 file name convention:
@@ -316,8 +317,9 @@ class TestLocalClientNative(StubLocalClient, UnitTestCase):
         return LocalClient(path)
 
 
-@unittest.skipIf(AbstractOSIntegration.is_linux(),
-                 'GNU/Linux uses native LocalClient.')
+@pytest.mark.skipif(
+    sys.platform == 'linux2',
+    reason='GNU/Linux uses native LocalClient.')
 class TestLocalClientSimulation(StubLocalClient, UnitTestCase):
     """
     Test LocalClient using OS specific commands to make FS operations.
@@ -337,7 +339,7 @@ class TestLocalClientSimulation(StubLocalClient, UnitTestCase):
         Explorer cannot find the directory as the path is way to long.
         """
 
-        if AbstractOSIntegration.is_windows():
+        if sys.platform == 'win32':
             try:
                 # IOError: [Errno 2] No such file or directory
                 with self.assertRaises(IOError):
@@ -356,7 +358,7 @@ class TestLocalClientSimulation(StubLocalClient, UnitTestCase):
         Explorer cannot deal with very long paths.
         """
 
-        if AbstractOSIntegration.is_windows():
+        if sys.platform == 'win32':
             # WindowsError: [Error 206] The filename or extension is too long
             with self.assertRaises(OSError) as ex:
                 super(TestLocalClientSimulation, self).test_deep_folders()

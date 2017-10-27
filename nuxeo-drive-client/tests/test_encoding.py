@@ -1,9 +1,10 @@
 # coding: utf-8
 import os
-from unittest import skipIf
+import sys
+
+import pytest
 
 from nxdrive.client.local_client import FileInfo
-from nxdrive.osi import AbstractOSIntegration
 from tests.common_unit_test import UnitTestCase
 
 
@@ -92,8 +93,9 @@ class TestEncoding(UnitTestCase):
             u'/espace\xa0 et TM\u2122.doc').name,
             u'espace\xa0 et TM\u2122.doc')
 
-    @skipIf(AbstractOSIntegration.is_mac(),
-            'Normalization dont work on Mac')
+    @pytest.mark.skipif(
+        sys.platform == 'darwin',
+        reason='Normalization do not work on macOS.')
     def test_fileinfo_normalization(self):
         self.engine_1.stop()
         name = u'Teste\u0301'
