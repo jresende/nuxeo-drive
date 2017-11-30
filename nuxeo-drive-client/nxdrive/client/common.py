@@ -80,7 +80,7 @@ class DuplicationError(IOError):
 
 
 # Default buffer size for file upload / download and digest computation
-FILE_BUFFER_SIZE = 1024 ** 2
+FILE_BUFFER_SIZE = 128 * 64
 
 # Name of the folder holding the files locally edited from Nuxeo
 LOCALLY_EDITED_FOLDER_NAME = 'Locally Edited'

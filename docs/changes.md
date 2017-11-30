@@ -3,6 +3,7 @@ Release date: `2017-??-??`
 
 ### Core
 - [NXDRIVE-748](https://jira.nuxeo.com/browse/NXDRIVE-748): RemoteWatcher polling now uses timestamp instead of counter
+- [NXDRIVE-900](https://jira.nuxeo.com/browse/NXDRIVE-900): Improve memory consumption
 - [NXDRIVE-968](https://jira.nuxeo.com/browse/NXDRIVE-968): Improve logs disk space usage (set level to DEBUG)
 - [NXDRIVE-1019](https://jira.nuxeo.com/browse/NXDRIVE-1019): Retrieve the configuration from the server (**breaking change**)
 - [NXDRIVE-1036](https://jira.nuxeo.com/browse/NXDRIVE-1036): Cannot unsync an accentued root

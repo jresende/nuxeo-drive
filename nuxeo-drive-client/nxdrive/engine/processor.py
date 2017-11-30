@@ -286,7 +286,6 @@ class Processor(EngineWorker):
                         else:
                             self._handle_pair_handler_exception(
                                 doc_pair, handler_name, exc)
-                        del exc  # Fix reference leak
                         continue
                     except (URLError, socket.error, PairInterrupt) as exc:
                         # socket.error for SSLError
@@ -294,7 +293,6 @@ class Processor(EngineWorker):
                                   type(exc).__name__, doc_pair)
                         sleep(1)
                         self._engine.get_queue_manager().push(doc_pair)
-                        del exc  # Fix reference leak
                         continue
                     except DuplicationDisabledError:
                         self.giveup_error(doc_pair, 'DEDUP')
@@ -304,7 +302,6 @@ class Processor(EngineWorker):
                     except Exception as exc:
                         self._handle_pair_handler_exception(
                             doc_pair, handler_name, exc)
-                        del exc  # Fix reference leak
                         continue
             except ThreadInterrupt:
                 self._engine.get_queue_manager().push(doc_pair)
@@ -314,7 +311,6 @@ class Processor(EngineWorker):
                 self.increase_error(doc_pair, 'EXCEPTION', exception=e)
                 raise e
             finally:
-                self._current_doc_pair = None  # Fix reference leak
                 if soft_lock is not None:
                     self._unlock_soft_path(soft_lock)
                 self._dao.release_state(self._thread_id)

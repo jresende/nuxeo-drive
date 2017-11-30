@@ -123,6 +123,8 @@ class Engine(QObject):
     offline = pyqtSignal()
     online = pyqtSignal()
 
+    __local_client = None
+
     def __init__(self, manager, definition, binder=None, processors=5,
                  remote_doc_client_factory=RemoteDocumentClient,
                  remote_fs_client_factory=RemoteFileSystemClient,
@@ -883,13 +885,15 @@ class Engine(QObject):
                     thread.worker.quit()
 
     def get_local_client(self):
-        client = LocalClient(
-            self.local_folder,
-            case_sensitive=self._case_sensitive,
-        )
-        if self._case_sensitive is None and os.path.exists(self.local_folder):
-            self._case_sensitive = client.is_case_sensitive()
-        return client
+        if not self.__local_client:
+            client = LocalClient(
+                self.local_folder,
+                case_sensitive=self._case_sensitive,
+            )
+            if self._case_sensitive is None and os.path.exists(self.local_folder):
+                self._case_sensitive = client.is_case_sensitive()
+                self.__local_client = client
+        return self.__local_client
 
     def get_server_version(self):
         return self._dao.get_config("server_version")
@@ -941,6 +945,7 @@ class Engine(QObject):
     def suspend_client(self, *_):
         if self.is_paused() or self._stopped:
             raise ThreadInterrupt
+
         # Verify thread status
         thread_id = current_thread().ident
         for thread in self._threads:
@@ -949,6 +954,7 @@ class Engine(QObject):
                     and thread.worker.get_thread_id() == thread_id
                     and not thread.worker.is_started()):
                 raise ThreadInterrupt
+
         # Get action
         current_file = None
         action = Action.get_current_action()

@@ -7,6 +7,7 @@ from time import sleep
 from urllib2 import HTTPError, URLError
 
 from PyQt4.QtCore import pyqtSignal, pyqtSlot
+from memory_profiler import profile
 
 from nxdrive.client import NotFound
 from nxdrive.client.base_automation_client import Unauthorized
@@ -38,6 +39,7 @@ class RemoteWatcher(EngineWorker):
         # Review to delete
         self._init()
         self._next_check = 0
+        self._local_client = self._engine.get_local_client()
 
     def _init(self):
         self.unhandle_fs_event = False
@@ -48,7 +50,6 @@ class RemoteWatcher(EngineWorker):
         self._last_root_definitions = self._dao.get_config('remote_last_root_definitions')
         self._last_remote_full_scan = self._dao.get_config('remote_last_full_scan')
         self._client = None
-        self._local_client = self._engine.get_local_client()
         self._metrics = {
             'last_remote_scan_time': -1,
             'last_remote_update_time': -1,
@@ -93,7 +94,6 @@ class RemoteWatcher(EngineWorker):
         try:
             if from_state is None:
                 from_state = self._dao.get_state_from_local('/')
-            self._client = self._engine.get_remote_client()
             remote_info = self._client.get_info(from_state.remote_ref)
             self._dao.update_remote_state(from_state, remote_info, remote_parent_path=from_state.remote_parent_path)
         except NotFound:
@@ -223,8 +223,6 @@ class RemoteWatcher(EngineWorker):
             log.trace('Remote scroll request retrieved %d descendants of %r (%s), took %s ms', len(descendants_info),
                       remote_info.name, remote_info.uid, elapsed)
             scroll_id = scroll_res['scroll_id']
-
-            del scroll_res['descendants']  # Fix reference leak
 
             # Results are not necessarily sorted
             descendants_info = sorted(descendants_info, key=lambda x: x.path)
@@ -460,6 +458,7 @@ class RemoteWatcher(EngineWorker):
                 return None
         return self._client
 
+    @profile
     def _handle_changes(self, first_pass=False):
         if not self.testing and self._engine._dao.get_syncing_count():
             log.trace('Skipping remotes changes handling, I am still syncing.')
@@ -556,20 +555,17 @@ class RemoteWatcher(EngineWorker):
             remote_path = '/'
             self._dao.add_path_to_scan(remote_path)
             self._dao.update_config('remote_need_full_scan', remote_path)
-            del summary['fileSystemChanges']  # Fix reference leak
             return
 
         if not summary['fileSystemChanges']:
             self._metrics['empty_polls'] += 1
             self.noChangesFound.emit()
-            del summary['fileSystemChanges']  # Fix reference leak
             return
 
         # Fetch all events and consider the most recent folder first
         sorted_changes = sorted(summary['fileSystemChanges'],
                                 key=lambda x: x['eventDate'], reverse=True)
         n_changes = len(sorted_changes)
-        del summary['fileSystemChanges']  # Fix reference leak
         self._metrics['last_changes'] = n_changes
         self._metrics['empty_polls'] = 0
         self.changesFound.emit(n_changes)
@@ -717,7 +713,6 @@ class RemoteWatcher(EngineWorker):
                                 self._handle_readonly(self._local_client, doc_pair)
                             except (OSError, IOError) as exc:
                                 log.trace('Cannot handle readonly for %r (%r)', doc_pair, exc)
-                                del exc  # Fix reference leak
                 updated = True
                 refreshed.add(remote_ref)
 

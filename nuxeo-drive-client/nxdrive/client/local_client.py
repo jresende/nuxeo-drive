@@ -97,24 +97,18 @@ class FileInfo(object):
                        if digest_func is not None
                        else self._digest_func)
         digester = getattr(hashlib, digest_func, None)
-        if digester is None:
+        if not digester:
             raise ValueError('Unknown digest method: ' + digest_func)
 
         h = digester()
         try:
             with open(safe_long_path(self.filepath), 'rb') as f:
-                while True:
-                    # Check if synchronization thread was suspended
-                    if self.check_suspended is not None:
-                        self.check_suspended('Digest computation: %s'
-                                             % self.filepath)
-                    buffer_ = f.read(FILE_BUFFER_SIZE)
-                    if buffer_ == '':
-                        break
-                    h.update(buffer_)
+                for chunk in iter(lambda: f.read(FILE_BUFFER_SIZE), b''):
+                    h.update(chunk)
         except IOError:
             return UNACCESSIBLE_HASH
-        return h.hexdigest()
+        else:
+            return h.hexdigest()
 
 
 class LocalClient(BaseClient):

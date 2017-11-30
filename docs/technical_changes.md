@@ -6,6 +6,7 @@
 - Removed `options` keyword from `Application.__init__()`. Use `Options` instead.
 - Removed `ignored_prefixes` keyword from `BaseAutomationClient.__init__()`. Use `Options.ignored_prefixes` instead.
 - Removed `ignored_suffixes` keyword from `BaseAutomationClient.__init__()`. Use `Options.ignored_suffixes` instead.
+- Removed `BaseAutomationClient.get_upload_buffer`(). Use `FILE_BUFFER_SIZE` constant instead.
 - Removed `options` keyword from `CliHandler.get_manager()`. Use `Options` instead.
 - Removed `options` keyword from `CliHandler.uninstall()`. Use `Options` instead.
 - Added `Engine.add_to_favorites()`
@@ -44,7 +45,7 @@
 - Added options.py
 
 # 2.5.7
-- Removed `BaseAutomationClient.get_download_buffer()`. Use `FILE_BUFFER_SIZE` attribute instead.
+- Removed `BaseAutomationClient.get_download_buffer()`. Use `FILE_BUFFER_SIZE` constant instead.
 
 # 2.5.6
 - Added `BaseAutomationClient.check_access()`

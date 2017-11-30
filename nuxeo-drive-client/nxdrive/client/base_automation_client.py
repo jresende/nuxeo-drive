@@ -7,7 +7,6 @@ import json
 import os
 import random
 import socket
-import sys
 import tempfile
 import time
 import urllib2
@@ -24,7 +23,7 @@ from nxdrive.options import Options
 from nxdrive.utils import TOKEN_PERMISSION, force_decode, get_device, \
     guess_digest_algorithm, guess_mime_type
 
-log = None
+log = get_logger(__name__)
 
 CHANGE_SUMMARY_OPERATION = 'NuxeoDrive.GetChangeSummary'
 DEFAULT_NUXEO_TX_TIMEOUT = 300
@@ -163,11 +162,11 @@ class BaseAutomationClient(BaseClient):
                  password=None, token=None, repository=Options.remote_repo,
                  timeout=20, blob_timeout=60, cookie_jar=None,
                  upload_tmp_dir=None, check_suspended=None):
-        global log
-        log = get_logger(__name__)
         # Function to check during long-running processing like upload /
         # download if the synchronization thread needs to be suspended
         self.check_suspended = check_suspended
+        if not self.check_suspended:
+            self.check_suspended = lambda *args: None
 
         if timeout is None or timeout < 0:
             timeout = 20
@@ -192,24 +191,22 @@ class BaseAutomationClient(BaseClient):
         self._update_auth(password=password, token=token)
 
         self.cookie_jar = cookie_jar
-        cookie_processor = urllib2.HTTPCookieProcessor(
-            cookiejar=cookie_jar)
+        cookie_processor = urllib2.HTTPCookieProcessor(cookiejar=cookie_jar)
 
         # Get proxy handler
-        proxy_handler = get_proxy_handler(proxies,
-                                          proxy_exceptions=proxy_exceptions,
-                                          url=self.server_url)
+        proxy_handler = get_proxy_handler(
+            proxies, proxy_exceptions=proxy_exceptions, url=self.server_url)
 
         # Build URL openers
         self.opener = urllib2.build_opener(cookie_processor, proxy_handler)
-        self.streaming_opener = urllib2.build_opener(cookie_processor,
-                                                     proxy_handler,
-                                                     *get_handlers())
+        self.streaming_opener = urllib2.build_opener(
+            cookie_processor, proxy_handler, *get_handlers())
 
         # Set Proxy flag
         self.is_proxy = False
         opener_proxies = get_opener_proxies(self.opener)
-        log.trace('Proxy configuration: %s, effective proxy list: %r', get_proxy_config(proxies), opener_proxies)
+        log.trace('Proxy configuration: %s, effective proxy list: %r',
+                  get_proxy_config(proxies), opener_proxies)
         if opener_proxies:
             self.is_proxy = True
 
@@ -391,10 +388,7 @@ class BaseAutomationClient(BaseClient):
             try:
                 with open(file_out, "wb") as f:
                     while True:
-                        # Check if synchronization thread was suspended
-                        if self.check_suspended is not None:
-                            self.check_suspended('File download: %s'
-                                                 % file_out)
+                        self.check_suspended('File download: %s' % file_out)
                         buffer_ = resp.read(FILE_BUFFER_SIZE)
                         if buffer_ == '':
                             break
@@ -454,12 +448,6 @@ class BaseAutomationClient(BaseClient):
             self.cookie_jar.clear_session_cookies()
         finally:
             self.end_action()
-
-    @staticmethod
-    def get_upload_buffer(input_file):
-        if sys.platform != 'win32':
-            return os.fstatvfs(input_file.fileno()).f_bsize
-        return FILE_BUFFER_SIZE
 
     def init_upload(self):
         url = self.rest_api_url + self.batch_upload_path
@@ -541,8 +529,7 @@ class BaseAutomationClient(BaseClient):
         # Request data
         input_file = open(file_path, 'rb')
         # Use file system block size if available for streaming buffer
-        fs_block_size = self.get_upload_buffer(input_file)
-        data = self._read_data(input_file, fs_block_size)
+        data = self._read_data(input_file)
 
         # Execute request
         cookies = self._get_cookies()
@@ -737,7 +724,7 @@ class BaseAutomationClient(BaseClient):
                 log.trace("Unexpected param '%s' for operation '%s'",
                           param, command)
         for param in required_params:
-            if not param in params:
+            if param not in params:
                 raise ValueError(
                     "Missing required param '%s' for operation '%s'" % (
                         param, command))
@@ -746,7 +733,6 @@ class BaseAutomationClient(BaseClient):
 
     def _read_response(self, response, url):
         info, s = response.info(), response.read()
-        del response  # Fix reference leak
         content_type = info.get('content-type', '')
         cookies = self._get_cookies()
         if content_type.startswith("application/json"):
@@ -785,9 +771,7 @@ class BaseAutomationClient(BaseClient):
                 log.error(message)
                 if isinstance(e, urllib2.HTTPError):
                     code = e.code
-                    del e  # Fix reference leak
                     return code, None, message, None
-        del e  # Fix reference leak
         return None
 
     @staticmethod
@@ -796,26 +780,28 @@ class BaseAutomationClient(BaseClient):
 
         return str(time.time()) + '_' + str(random.randint(0, 1000000000))
 
-    def _read_data(self, file_object, buffer_size):
+    def _read_data(self, file_object):
         while True:
             current_action = Action.get_current_action()
             if current_action is not None and current_action.suspend:
                 break
-            # Check if synchronization thread was suspended
-            if self.check_suspended is not None:
-                self.check_suspended('File upload: %s' % file_object.name)
-            r = file_object.read(buffer_size)
+
+            self.check_suspended('File upload: %s' % file_object.name)
+            r = file_object.read(FILE_BUFFER_SIZE)
             if not r:
                 break
-            if current_action is not None:
-                current_action.progress += buffer_size
+            if current_action:
+                current_action.progress += FILE_BUFFER_SIZE
             yield r
 
     def do_get(self, url, file_out=None, digest=None, digest_algorithm=None):
-        log.trace('Downloading file from %r to %r with digest=%s, digest_algorithm=%s', url, file_out, digest,
-                  digest_algorithm)
-        h = None
-        if digest is not None:
+        log.trace(
+            'Downloading file from %r to %r with digest=%s, algorithm=%s',
+            url, file_out, digest, digest_algorithm)
+
+        if not digest:
+            h = PassiveHash()
+        else:
             if digest_algorithm is None:
                 digest_algorithm = guess_digest_algorithm(digest)
                 log.trace('Guessed digest algorithm from digest: %s', digest_algorithm)
@@ -823,66 +809,73 @@ class BaseAutomationClient(BaseClient):
             if digester is None:
                 raise ValueError('Unknow digest method: ' + digest_algorithm)
             h = digester()
+
         headers = self._get_common_headers()
         base_error_message = (
-            "Failed to connect to Nuxeo server %r with user %r"
+            'Failed to connect to Nuxeo server %r with user %r'
         ) % (self.server_url, self.user_id)
+        log.trace('Calling %r with headers: %r', url, headers)
+
         try:
-            log.trace("Calling '%s' with headers: %r", url, headers)
             req = urllib2.Request(url, headers=headers)
             response = self.opener.open(req, timeout=self.blob_timeout)
-            current_action = Action.get_current_action()
+
+            if not file_out:
+                return response.read(), None
+
             # Get the size file
-            if (current_action
-                    and response is not None
-                    and response.info() is not None):
-                current_action.size = int(response.info().getheader(
-                                                    'Content-Length', 0))
-            if file_out is not None:
-                locker = self.unlock_path(file_out)
-                try:
-                    with open(file_out, "wb") as f:
-                        while True:
-                            # Check if synchronization thread was suspended
-                            if self.check_suspended is not None:
-                                self.check_suspended('File download: %s'
-                                                     % file_out)
-                            buffer_ = response.read(FILE_BUFFER_SIZE)
-                            if buffer_ == '':
-                                break
-                            if current_action:
-                                current_action.progress += FILE_BUFFER_SIZE
-                            f.write(buffer_)
-                            if h is not None:
-                                h.update(buffer_)
-                    if digest is not None:
-                        actual_digest = h.hexdigest()
-                        if digest != actual_digest:
-                            if os.path.exists(file_out):
-                                os.remove(file_out)
-                            raise CorruptedFile("Corrupted file %r: expected digest = %s, actual digest = %s"
-                                                % (file_out, digest, actual_digest))
-                    return None, file_out
-                finally:
-                    self.lock_path(file_out, locker)
-            else:
-                result = response.read()
-                if h is not None:
-                    h.update(result)
-                    if digest is not None:
-                        actual_digest = h.hexdigest()
-                        if digest != actual_digest:
-                            raise CorruptedFile("Corrupted file: expected digest = %s, actual digest = %s"
-                                                % (digest, actual_digest))
-                return result, None
+            current_action = Action.get_current_action()
+            if current_action:
+                info = response.info()
+                if info:
+                    current_action.size = int(info.getheader('Content-Length', 0))
+
+            locker = self.unlock_path(file_out)
+            try:
+                with open(file_out, 'wb') as f:
+                    while True:
+                        self.check_suspended('File download: %s' % file_out)
+                        buffer_ = response.read(FILE_BUFFER_SIZE)
+                        if not buffer_:
+                            break
+                        if current_action:
+                            current_action.progress += FILE_BUFFER_SIZE
+                        f.write(buffer_)
+                        h.update(buffer_)
+
+                actual_digest = h.hexdigest()
+                if digest != actual_digest:
+                    try:
+                        os.remove(file_out)
+                    except OSError:
+                        pass
+                    raise CorruptedFile(
+                        'Corrupted file %r: expected digest = %s, actual digest = %s'
+                        % (file_out, digest, actual_digest))
+                return None, file_out
+            finally:
+                self.lock_path(file_out, locker)
         except urllib2.HTTPError as e:
             if e.code == 401 or e.code == 403:
                 raise Unauthorized(self.server_url, self.user_id, e.code)
             else:
-                e.msg = base_error_message + ": HTTP error %d" % e.code
+                e.msg = base_error_message + ': HTTP error %d' % e.code
                 raise e
         except Exception as e:
             if hasattr(e, 'msg'):
-                e.msg = base_error_message + ": " + e.msg
+                e.msg = base_error_message + ': ' + e.msg
             raise
 
+
+class PassiveHash(object):
+    __slots__ = ('hexdigest', 'update')
+
+    def hexdigest(self):
+        # type: () -> None
+        """ Always return None. """
+        return None
+
+    def update(self, _):
+        # type: (bytes) -> None
+        """ Does nothing. """
+        pass

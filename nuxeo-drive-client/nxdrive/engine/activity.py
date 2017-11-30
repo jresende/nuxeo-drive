@@ -29,17 +29,19 @@ class Action(object):
     def get_current_action(thread_id=None):
         if thread_id is None:
             thread_id = current_thread().ident
-        if thread_id in Action.actions:
+        try:
             return Action.actions[thread_id]
-        return None
+        except KeyError:
+            return None
 
     @staticmethod
     def get_last_file_action(thread_id=None):
         if thread_id is None:
             thread_id = current_thread().ident
-        if thread_id in Action.lastFileActions:
+        try:
             return Action.lastFileActions[thread_id]
-        return None
+        except KeyError:
+            return None
 
     @staticmethod
     def finish_action():
@@ -54,14 +56,13 @@ class Action(object):
 
     def __repr__(self):
         if self.progress is None:
-            return "%s" % self.type
-        else:
-            return "%s(%s%%)" % (self.type, self.progress)
+            return str(self.type)
+        return '%s(%s%%)' % (self.type, self.progress)
 
 
 class IdleAction(Action):
     def __init__(self):
-        self.type = "Idle"
+        self.type = 'Idle'
 
     def get_percent(self):
         return None
@@ -97,11 +98,13 @@ class FileAction(Action):
     def __repr__(self):
         # Size can be None if the file disapeared right on creation
         if self.size is None:
-            return "%s(%r)" % (self.type, self.filename)
+            return '%s(%r)' % (self.type, self.filename)
+
         percent = self.get_percent()
         if percent is None:
-            return "%s(%r[%d])" % (self.type, self.filename, self.size)
-        return "%s(%r[%d]-%f%%)" % (self.type, self.filename, self.size, percent)
+            return '%s(%r[%d])' % (self.type, self.filename, self.size)
+        return '%s(%r[%d]-%f%%)' % (self.type, self.filename, self.size, percent)
+
 
 Action.actions = dict()
 Action.lastFileActions = dict()
